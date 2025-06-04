@@ -1,10 +1,8 @@
 #THIS IS FROM CHATGPT SO IT'S NOT FINAL
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from passlib.hash import bcrypt
-from flask_jwt_extended import create_access_token
 from extensions import db
 from models import Usuario
-from datetime import timedelta
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -41,7 +39,7 @@ def login_user():
     """
     Endpoint: POST /auth/login
     Corpo JSON: { "email": "...", "password": "..." }
-    Risposta 200: { "token": "..." }
+    Se credenziali valide, imposta session['user_id'] e restituisce 200 OK.
     """
     data = request.get_json()
 
@@ -60,7 +58,19 @@ def login_user():
     if not bcrypt.verify(password, user.contrasena):
         return jsonify({'error': 'Credenciales inválidas'}), 401
     
-     # Creo il token JWT con durata di 1 ora
-    access_token = create_access_token(identity=user.id_usuario,
-                                       expires_delta=timedelta(hours=1))
-    return jsonify({'token': access_token}), 200
+    # Imposta l'ID utente nella sessione (tramite cookie firmato)
+    session['user_id'] = user.id_usuario
+    # (Opzionale) Rendi la sessione "permanente" 
+    # in questo caso durerebbe fino a session.permanent_lifetime
+    #session.permanent = True
+
+    return jsonify({'message': 'Login eseguito'}), 200
+
+@auth_bp.route('/logout', methods=['POST'])
+def logout_user():
+    """
+    POST /auth/logout
+    Rimuove 'user_id' dalla sessione e restituisce 200 OK.
+    """
+    session.pop('user_id', None)
+    return jsonify({'message': 'Logout eseguito'}), 200

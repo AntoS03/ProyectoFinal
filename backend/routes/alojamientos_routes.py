@@ -1,16 +1,20 @@
 #THIS IS FROM CHATGPT SO IT'S NOT FINAL
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint, request, jsonify, session
 from extensions import db
-from models import Alojamiento, Usuario
+from models import Alojamiento
 from sqlalchemy import and_
-#from backend.utils import propietario_required
+from utils import login_required
 
 alojamientos_bp = Blueprint('alojamientos', __name__)
 
 # Search properties with filters
 @alojamientos_bp.route('/', methods=['GET'])
 def search_alojamientos():
+    """
+    GET /alojamientos
+    Restituisce la lista di alloggi, con filtri opzionali su 'ciudad' e 'precioMax'.
+    Disponibile anche a utenti non autenticati.
+    """
     ciudad = request.args.get('ciudad', type=str)
     precio_max = request.args.get('precioMax', type=float)
 
@@ -22,6 +26,7 @@ def search_alojamientos():
         query = query.filter(Alojamiento.precio_noche <= precio_max)
 
     alojamientos = query.all()
+
     result = []
     for a in alojamientos:
         result.append({
@@ -39,7 +44,8 @@ def search_alojamientos():
 def detail_alojamiento(id):
     """
     Endpoint: GET /alojamientos/<id>
-    Restituisce i dettagli di un singolo alloggio
+    Restituisce i dettagli di un singolo alloggio.
+    Disponibile anche a utenti non autenticati.
     """
     a = Alojamiento.query.get(id)
     if not a:
@@ -61,7 +67,7 @@ def detail_alojamiento(id):
 
 # Create property
 @alojamientos_bp.route('/', methods=['POST'])
-@jwt_required()
+@login_required
 def create_alojamiento():
     """
     Endpoint: POST /alojamientos
@@ -80,7 +86,7 @@ def create_alojamiento():
     Risposta 201: { "message": "Alojamiento creado", "id": <id_nuovo> }
     """
     data = request.get_json()
-    user_id = get_jwt_identity()
+    user_id = session['user_id']  # ID dell'utente autenticato
     
     # Controllo campi obbligatori
     obbligatori = ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche']
@@ -109,14 +115,14 @@ def create_alojamiento():
 
 # Edit property (only from owner)
 @alojamientos_bp.route('/<int:id>', methods=['PUT'])
-@jwt_required()
+@login_required
 #@propietario_required
 def edit_alojamiento(id):
     """
     Endpoint: PUT /alojamientos/<id>
     Solo il proprietario dell'alloggio può modificarlo.
     """
-    user_id = get_jwt_identity()
+    user_id = session['user_id']
     a = Alojamiento.query.get(id)
     if not a:
         return jsonify({'error': 'Alojamiento no encontrado'}), 404
@@ -137,14 +143,14 @@ def edit_alojamiento(id):
 
 # Delete property
 @alojamientos_bp.route('/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 #@propietario_required
 def delete_alojamiento(id):
     """
     Endpoint: DELETE /alojamientos/<id>
     Solo il proprietario dell'alloggio può eliminarlo.
     """
-    user_id = get_jwt_identity()
+    user_id = session['user_id']
     a = Alojamiento.query.get(id)
     if not a:
         return jsonify({'error': 'Alojamiento no encontrado'}), 404

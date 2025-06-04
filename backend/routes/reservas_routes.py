@@ -1,8 +1,8 @@
 #THIS IS FROM CHATGPT SO IT'S NOT FINAL
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint, request, jsonify, session
 from extensions import db
-from models import Reserva, Alojamiento, Usuario
+from models import Reserva, Alojamiento
+from utils import login_required
 from datetime import datetime
 from sqlalchemy import or_, and_
 #from backend.utils import reserva_owner_required
@@ -11,7 +11,7 @@ reservas_bp = Blueprint('reservas', __name__)
 
 # Create reservation
 @reservas_bp.route('/', methods=['POST'])
-@jwt_required()
+@login_required
 def create_reserva():
     """
     Endpoint: POST /reservas
@@ -26,7 +26,7 @@ def create_reserva():
     Risposta 201: { "message": "Reserva creada", "id": 123 }
     """
     data = request.get_json()
-    user_id = get_jwt_identity()
+    user_id = session['user_id']
 
     # Controllo campi obbligatori
     obbligatori = ['id_alojamiento', 'fecha_inicio', 'fecha_fin']
@@ -78,13 +78,13 @@ def create_reserva():
 
 # Get user reservations
 @reservas_bp.route('', methods=['GET'])
-@jwt_required()
+@login_required
 def get_user_reservas():
     """
     Endpoint: GET /reservas
     Restituisce le prenotazioni del solo utente loggato.
     """
-    user_id = get_jwt_identity()
+    user_id = session['user_id']
     reservas = Reserva.query.filter_by(id_usuario=user_id).all()
     
     result = []
@@ -100,14 +100,14 @@ def get_user_reservas():
 
 # Cancel reservation
 @reservas_bp.route('/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 #@reserva_owner_required (Deprecated)
 def cancel_reserva(id):
     """
     Endpoint: DELETE /reservas/<id>
     Permette al proprietario della prenotazione di cancellarla.
     """
-    user_id = get_jwt_identity()
+    user_id = session['user_id']
     reserva = Reserva.query.get(id)
     if not reserva:
         return jsonify({'error': 'Reserva no encontrada'}), 404
@@ -122,14 +122,14 @@ def cancel_reserva(id):
     return jsonify({'message': 'Reserva cancelada'}), 200
 
 @reservas_bp.route('/<int:id>/confirm', methods=['PUT'])
-@jwt_required()
+@login_required
 def confirmar_reserva(id):
     """
     Endpoint: PUT /reservas/<id>/confirm
     Solo il proprietario dell'alloggio associato alla prenotazione può confermare.
     Cambia lo stato da 'Pendiente' a 'Confirmada'.
     """
-    user_id = get_jwt_identity()
+    user_id = session['user_id']
     reserva = Reserva.query.get(id)
     if not reserva:
         return jsonify({'error': 'Reserva no encontrada'}), 404

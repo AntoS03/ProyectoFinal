@@ -1,5 +1,4 @@
 # config.py
-#I still need to understand how SQL alchemy and JWT work
 
 import os
 
@@ -15,6 +14,8 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Configurazione JWT
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'chitemmuort')
-    JWT_ACCESS_TOKEN_EXPIRES = 3600  # Token valido per 1 ora (3600 secondi)
+    # Configurazione sicura del cookie di sessione
+    SESSION_COOKIE_HTTPONLY = True     # 🔒 impedisce accesso da JavaScript
+    SESSION_COOKIE_SECURE = False       # 🔐 solo su HTTPS
+    SESSION_COOKIE_SAMESITE = 'Lax'    # 🛡️ limita invio in contesti cross-site
+    PERMANENT_SESSION_LIFETIME = 3600  # (esempio) scade dopo 1 ora
