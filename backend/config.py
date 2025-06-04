@@ -7,7 +7,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     # Chiave segreta per proteggere session e JWT
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'cambia_questa_stringa_in_prod')
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'li_mortacci_tua')
     # Connessione al database MySQL: nome_utente, password, host, database
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
@@ -16,5 +16,5 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Configurazione JWT
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'cambia_questa_stringa_in_prod')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'chitemmuort')
     JWT_ACCESS_TOKEN_EXPIRES = 3600  # Token valido per 1 ora (3600 secondi)

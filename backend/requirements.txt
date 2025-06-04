@@ -3,3 +3,5 @@ flask-mysqldb
 flask-cors
 flask-jwt-extended
 flask-sqlalchemy
+mysqlclient
+passlib[bcrypt]
