@@ -5,3 +5,4 @@ flask-jwt-extended
 flask-sqlalchemy
 mysqlclient
 passlib[bcrypt]
+gunicorn
