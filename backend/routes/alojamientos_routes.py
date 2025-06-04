@@ -1,53 +1,94 @@
 #THIS IS FROM CHATGPT SO IT'S NOT FINAL
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.models import Alojamiento, db, Usuario
-from backend.utils import propietario_required
+from extensions import db
+from models import Alojamiento, Usuario
+from sqlalchemy import and_
+#from backend.utils import propietario_required
 
 alojamientos_bp = Blueprint('alojamientos', __name__)
 
 # Search properties with filters
 @alojamientos_bp.route('/', methods=['GET'])
 def search_alojamientos():
-    filters = request.args
+    ciudad = request.args.get('ciudad', type=str)
+    precio_max = request.args.get('precioMax', type=float)
+
     query = Alojamiento.query
-    
-    if 'ciudad' in filters:
-        query = query.filter(Alojamiento.ciudad == filters['ciudad'])
-    if 'precioMax' in filters:
-        query = query.filter(Alojamiento.precio_noche <= float(filters['precioMax']))
-    
-    results = query.all()
-    return jsonify([{
-        'id': a.id_alojamiento,
-        'nombre': a.nombre,
-        'ciudad': a.ciudad,
-        'precio_noche': float(a.precio_noche),
-        'imagen_principal': a.imagen_principal_ruta
-    } for a in results]), 200
+
+    if ciudad:
+        query = query.filter(Alojamiento.ciudad.ilike(f'%{ciudad}%'))
+    if precio_max is not None:
+        query = query.filter(Alojamiento.precio_noche <= precio_max)
+
+    alojamientos = query.all()
+    result = []
+    for a in alojamientos:
+        result.append({
+            'id': a.id_alojamiento,
+            'nombre': a.nombre,
+            'ciudad': a.ciudad,
+            'precio_noche': float(a.precio_noche),
+            'imagen_principal_ruta': a.imagen_principal_ruta
+        })
+
+    return jsonify(result), 200
 
 # Property details
 @alojamientos_bp.route('/<int:id>', methods=['GET'])
-def get_alojamiento(id):
-    alojamiento = Alojamiento.query.get_or_404(id)
-    return jsonify({
-        'id': alojamiento.id_alojamiento,
-        'nombre': alojamiento.nombre,
-        'direccion': alojamiento.direccion,
-        'ciudad': alojamiento.ciudad,
-        'descripcion': alojamiento.descripcion,
-        'precio_noche': float(alojamiento.precio_noche),
-        'imagen_principal': alojamiento.imagen_principal_ruta
-    }), 200
+def detail_alojamiento(id):
+    """
+    Endpoint: GET /alojamientos/<id>
+    Restituisce i dettagli di un singolo alloggio
+    """
+    a = Alojamiento.query.get(id)
+    if not a:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+    
+    # Costruiamo la risposta con tutti i campi chiave
+    resp = {
+        'id': a.id_alojamiento,
+        'nombre': a.nombre,
+        'direccion': a.direccion,
+        'ciudad': a.ciudad,
+        'estado_o_pais': a.estado_o_pais,
+        'descripcion': a.descripcion,
+        'precio_noche': float(a.precio_noche),
+        'imagen_principal_ruta': a.imagen_principal_ruta,
+        'link_map': a.link_map
+    }
+    return jsonify(resp), 200
 
 # Create property
 @alojamientos_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_alojamiento():
+    """
+    Endpoint: POST /alojamientos
+    Richiede token (utente loggato). Crea un nuovo alloggio.
+    Body (JSON) es.:
+      {
+        "nombre": "Casa Azul",
+        "direccion": "Calle Falsa 123",
+        "ciudad": "Madrid",
+        "estado_o_pais": "España",
+        "descripcion": "Bella casa...",
+        "precio_noche": 80.50,
+        "imagen_principal_ruta": "https://...jpg",
+        "link_map": "https://maps.google.com/..."
+      }
+    Risposta 201: { "message": "Alojamiento creado", "id": <id_nuovo> }
+    """
     data = request.get_json()
     user_id = get_jwt_identity()
     
-    new_property = Alojamiento(
+    # Controllo campi obbligatori
+    obbligatori = ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche']
+    if not data or not all(key in data for key in obbligatori):
+        return jsonify({'msg': 'Faltan campos obligatorios'}), 400
+    
+    # Creo l’oggetto Alojamiento
+    a = Alojamiento(
         id_propietario=user_id,
         nombre=data['nombre'],
         direccion=data['direccion'],
@@ -55,36 +96,63 @@ def create_alojamiento():
         estado_o_pais=data['estado_o_pais'],
         descripcion=data['descripcion'],
         precio_noche=data['precio_noche'],
-        imagen_principal_ruta=data.get('imagen_principal', '')
+        imagen_principal_ruta=data.get('imagen_principal_ruta'),
+        link_map=data.get('link_map')
     )
-    
-    db.session.add(new_property)
+    db.session.add(a)
     db.session.commit()
-    return jsonify(message="Property created", id=new_property.id_alojamiento), 201
 
-# Update property
+    return jsonify({'message': 'Alojamiento creado', 'id': a.id_alojamiento}), 201
+
+# NOTA: gli endpoint di modifica/eliminazione di alloggio richiederebbero token admin.
+# Poiché ora ignoriamo gli admin, li lasciamo “stub” commentati o li blocchiamo restituendo 403.
+
+# Edit property (only from owner)
 @alojamientos_bp.route('/<int:id>', methods=['PUT'])
 @jwt_required()
-@propietario_required
-def update_alojamiento(id):
-    alojamiento = Alojamiento.query.get_or_404(id)
+#@propietario_required
+def edit_alojamiento(id):
+    """
+    Endpoint: PUT /alojamientos/<id>
+    Solo il proprietario dell'alloggio può modificarlo.
+    """
+    user_id = get_jwt_identity()
+    a = Alojamiento.query.get(id)
+    if not a:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+    
+    # Controllo permesso: solo il proprietario
+    if a.id_propietario != user_id:
+        return jsonify({'msg': 'No autorizado'}), 403
+    
     data = request.get_json()
     
-    alojamiento.nombre = data.get('nombre', alojamiento.nombre)
-    alojamiento.direccion = data.get('direccion', alojamiento.direccion)
-    alojamiento.ciudad = data.get('ciudad', alojamiento.ciudad)
-    alojamiento.descripcion = data.get('descripcion', alojamiento.descripcion)
-    alojamiento.precio_noche = data.get('precio_noche', alojamiento.precio_noche)
+    # Aggiorno campi ammessi
+    for field in ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche', 'imagen_principal_ruta', 'link_map']:
+        if field in data:
+            setattr(a, field, data[field])
     
     db.session.commit()
-    return jsonify(message="Property updated"), 200
+    return jsonify({'message': 'Alojamiento actualizado'}), 200
 
 # Delete property
 @alojamientos_bp.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
-@propietario_required
+#@propietario_required
 def delete_alojamiento(id):
-    alojamiento = Alojamiento.query.get_or_404(id)
-    db.session.delete(alojamiento)
+    """
+    Endpoint: DELETE /alojamientos/<id>
+    Solo il proprietario dell'alloggio può eliminarlo.
+    """
+    user_id = get_jwt_identity()
+    a = Alojamiento.query.get(id)
+    if not a:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+    
+    # Controllo permesso: solo il proprietario
+    if a.id_propietario != user_id:
+        return jsonify({'error': 'No autorizado'}), 403
+    
+    db.session.delete(a)
     db.session.commit()
-    return jsonify(message="Property deleted"), 200
+    return jsonify({'message': 'Alojamiento eliminado'}), 200
