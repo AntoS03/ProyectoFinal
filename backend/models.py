@@ -1,7 +1,10 @@
 # models.py
 
 from extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
+
+#def utc_now():
+#    return datetime.now(timezone.utc)
 
 class Usuario(db.Model):
     __tablename__ = 'Usuarios'
@@ -11,7 +14,7 @@ class Usuario(db.Model):
     apellidos = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
     contrasena = db.Column(db.String(255), nullable=False)
-    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_registro = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     imagen_perfil_ruta = db.Column(db.String(512), nullable=True)
 
     # Relazioni
@@ -45,7 +48,7 @@ class Reserva(db.Model):
     id_alojamiento = db.Column(db.Integer, db.ForeignKey('Alojamientos.id_alojamiento'), nullable=False)
     fecha_inicio = db.Column(db.Date, nullable=False)
     fecha_fin = db.Column(db.Date, nullable=False)
-    fecha_reserva_creada = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_reserva_creada = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     estado_reserva = db.Column(db.Enum('Pendiente', 'Confirmada', 'Cancelada', 'Pagado'), nullable=False, default='Pendiente')
 
 class Comentario(db.Model):
@@ -56,7 +59,7 @@ class Comentario(db.Model):
     id_alojamiento = db.Column(db.Integer, db.ForeignKey('Alojamientos.id_alojamiento'), nullable=False)
     texto = db.Column(db.Text, nullable=False)
     puntuacion = db.Column(db.SmallInteger, nullable=True)
-    fecha_comentario = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_comentario = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
 class ImagenAlojamiento(db.Model):
     __tablename__ = 'ImagenesAlojamiento'
@@ -66,4 +69,4 @@ class ImagenAlojamiento(db.Model):
     ruta_imagen = db.Column(db.String(512), nullable=False)
     descripcion_imagen = db.Column(db.String(255), nullable=True)
     orden = db.Column(db.Integer, nullable=True, default=0)
-    fecha_subida = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_subida = db.Column(db.DateTime, default=datetime.now(timezone.utc))
