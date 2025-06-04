@@ -11,7 +11,7 @@ class Config:
     # Connessione al database MySQL: nome_utente, password, host, database
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
-        'mysql://tuo_user:tuo_password@localhost/ProyectoFinal'
+        'mysql://Luca:Luca123!@localhost/ProyectoFinal'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
