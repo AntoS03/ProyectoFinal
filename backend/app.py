@@ -5,9 +5,9 @@ from config import Config
 from extensions import db, jwt
 
 # Import dei blueprint
-from backend.routes.auth_routes import auth_bp
-from backend.routes.alojamientos_routes import alojamientos_bp
-from backend.routes.reservas_routes import reservas_bp
+from routes.auth_routes import auth_bp
+from routes.alojamientos_routes import alojamientos_bp
+from routes.reservas_routes import reservas_bp
 
 def create_app():
     app = Flask(__name__)

@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import Reserva, Alojamiento, Usuario
 from datetime import datetime
+from sqlalchemy import or_, and_
 #from backend.utils import reserva_owner_required
 
 reservas_bp = Blueprint('reservas', __name__)
