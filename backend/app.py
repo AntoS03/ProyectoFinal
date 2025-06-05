@@ -26,11 +26,11 @@ def create_app():
     #    es. CORS(app, resources={r"/api/*": {"origins": "https://tuo-frontend.com"}})
 
     # Abilita CORS con restrizione di origine e supporto alle credenziali
-    CORS(
-        app,
-        resources={r"/*": {"origins": "https://localhost:5000"}},
-        supports_credentials=True
-    )
+    #CORS(
+    #    app,
+    #    resources={r"/*": {"origins": "https://localhost:5000"}},
+    #    supports_credentials=True
+    #)
     
     # Creo le tabelle se non esistono (solo in sviluppo)
     with app.app_context():
