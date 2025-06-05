@@ -3,7 +3,7 @@
  * Handles all API calls to the backend
  */
 
-const API_BASE = 'https://master-proyectofinal.francecentral.cloudapp.azure.com/api';
+const API_BASE = '/api';
 
 /**
  * Generic GET request to the API
@@ -88,7 +88,7 @@ async function apiDelete(path) {
  */
 async function checkAuth() {
   try {
-    const response = await apiGet('/reservas/');
+    const response = await apiGet('/reservas');
     return response.status === 200;
   } catch (error) {
     return false;
