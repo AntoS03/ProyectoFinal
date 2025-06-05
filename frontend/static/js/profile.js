@@ -197,7 +197,7 @@ function setupReservationActions() {
  */
 async function logout() {
   try {
-    const response = await apiPost('/auth/logout/');
+    const response = await apiPost('/auth/logout');
     
     if (response.ok) {
       // Redirect to home page
