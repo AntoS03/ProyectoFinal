@@ -37,13 +37,13 @@ def create_app():
         db.create_all()
 
     # Registro i blueprint
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(alojamientos_bp, url_prefix='/alojamientos')
-    app.register_blueprint(reservas_bp, url_prefix='/reservas')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(alojamientos_bp, url_prefix='/api/alojamientos')
+    app.register_blueprint(reservas_bp, url_prefix='/api/reservas')
 
     return app
 
 if __name__ == '__main__':
     app = create_app()
     # In ambiente di sviluppo useremo debug=True; in produzione metteremo False
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
