@@ -3,7 +3,7 @@
  * Handles all API calls to the backend
  */
 
-const API_BASE = '/api';
+const API_BASE = 'https://master-proyectofinal.francecentral.cloudapp.azure.com/api';
 
 /**
  * Generic GET request to the API
