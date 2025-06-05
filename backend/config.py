@@ -27,3 +27,5 @@ class Config:
     ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     # Dimensione massima upload (opzionale)
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
+
+    DEFAULT_PROFILE_IMAGE = os.path.join('..', 'frontend', 'static', 'uploads', 'user_profiles', 'default-profile.png')

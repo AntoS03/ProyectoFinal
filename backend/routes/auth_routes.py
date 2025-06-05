@@ -84,8 +84,7 @@ def logout_user():
 def get_current_user():
     """
     Endpoint: GET /auth/me
-    Restituisce i dati dell’utente loggato: nome, apellidos, email, imagen_perfil_ruta.
-    Se non è loggato, restituisce 401.
+    Restituisce i dati dell'utente loggato
     """
     user_id = session.get('user_id')
     if not user_id:
@@ -95,12 +94,13 @@ def get_current_user():
     if not user:
         return jsonify({'error': 'Utente non trovato'}), 404
 
+    # Correzione: Restituisci sempre tutti i campi
     return jsonify({
         'id_usuario': user.id_usuario,
-        'nombre': user.nombre,
-        'apellidos': user.apellidos,
-        'email': user.email,
-        'imagen_perfil_ruta': user.imagen_perfil_ruta or '' 
+        'nombre': user.nombre or '',
+        'apellidos': user.apellidos or '',
+        'email': user.email or '',
+        'imagen_perfil_ruta': user.imagen_perfil_ruta or ''
     }), 200
 
 def allowed_file(filename):
