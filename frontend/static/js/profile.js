@@ -55,7 +55,7 @@ async function loadUserReservations() {
   showSpinner('userReservations', true);
 
   try {
-    const response = await apiGet('/reservas/');
+    const response = await apiGet('/reservas');
     
     if (response.ok) {
       const reservations = await response.json();
