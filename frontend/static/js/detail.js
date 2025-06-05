@@ -53,7 +53,7 @@ async function loadPropertyDetail(id) {
   showSpinner('propertyDetail', true);
 
   try {
-    const response = await apiGet(`/alojamientos/${id}`);
+    const response = await apiGet(`/alojamientos/${id}/`);
     
     if (response.ok) {
       const property = await response.json();
@@ -264,7 +264,7 @@ async function createReservation() {
   bookBtn.innerHTML = '<span class="spinner"></span> Procesando...';
 
   try {
-    const response = await apiPost('/reservas', {
+    const response = await apiPost('/reservas/', {
       id_alojamiento: propertyId,
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin

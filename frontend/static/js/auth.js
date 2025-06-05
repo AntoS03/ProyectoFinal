@@ -56,7 +56,7 @@ function setupLoginForm() {
     loginBtn.innerHTML = '<span class="spinner"></span> Procesando...';
 
     try {
-      const response = await apiPost('/auth/login', {
+      const response = await apiPost('/auth/login/', {
         email: emailInput.value.trim(),
         password: passwordInput.value
       });
@@ -144,7 +144,7 @@ function setupRegisterForm() {
     registerBtn.innerHTML = '<span class="spinner"></span> Procesando...';
 
     try {
-      const response = await apiPost('/auth/register', {
+      const response = await apiPost('/auth/register/', {
         email: emailInput.value.trim(),
         password: passwordInput.value,
         nombre: nombreInput.value.trim(),

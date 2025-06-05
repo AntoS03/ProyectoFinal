@@ -55,7 +55,7 @@ async function loadUserReservations() {
   showSpinner('userReservations', true);
 
   try {
-    const response = await apiGet('/reservas');
+    const response = await apiGet('/reservas/');
     
     if (response.ok) {
       const reservations = await response.json();
@@ -101,7 +101,7 @@ async function renderReservations(reservations) {
     
     if (!property) {
       try {
-        const response = await apiGet(`/alojamientos/${reserva.id_alojamiento}`);
+        const response = await apiGet(`/alojamientos/${reserva.id_alojamiento}/`);
         if (response.ok) {
           property = await response.json();
           propertyCache[reserva.id_alojamiento] = property;
@@ -173,7 +173,7 @@ function setupReservationActions() {
       
       if (confirm('¿Seguro que deseas cancelar esta reserva?')) {
         try {
-          const response = await apiDelete(`/reservas/${reservationId}`);
+          const response = await apiDelete(`/reservas/${reservationId}/`);
           
           if (response.ok) {
             showAlert('Reserva cancelada correctamente.', 'success');
@@ -197,7 +197,7 @@ function setupReservationActions() {
  */
 async function logout() {
   try {
-    const response = await apiPost('/auth/logout');
+    const response = await apiPost('/auth/logout/');
     
     if (response.ok) {
       // Redirect to home page
