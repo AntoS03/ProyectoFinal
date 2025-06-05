@@ -104,12 +104,6 @@ header {
   height: 24px;
 }
 
-nav ul {
-  list-style: none;
-  display: flex;
-  gap: calc(var(--spacing) * 2);
-}
-
 nav a {
   color: var(--color-text-inverse);
   font-weight: 600;
@@ -130,6 +124,43 @@ nav a:hover, nav a.active {
   color: var(--color-text-inverse);
   font-size: 1.5rem;
   cursor: pointer;
+}
+
+/* ---- Mantieni tutti i <li> della navbar sulla stessa riga e allineati ---- */
+nav ul {
+  display: flex;
+  align-items: center;  /* centra verticalmente ogni <li> */
+  gap: calc(var(--spacing) * 2);
+}
+
+/* Ogni <li> (incluso #authLinks) diventa un flex container verticale */
+nav ul li {
+  display: flex;
+  align-items: center;
+}
+
+/* Assicura che anche #authLinks (con i link o il button) sia centrato */
+#authLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing);
+}
+
+/* Styling base per il button di logout nella navbar */
+#authLinks button#logoutBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-inverse);
+  font: inherit;
+  cursor: pointer;
+  padding: var(--spacing) calc(var(--spacing) * 1.5);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+#authLinks button#logoutBtn:hover {
+  background-color: var(--color-primary-light);
+  text-decoration: none;
 }
 
 /* Hero Section */

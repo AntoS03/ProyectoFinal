@@ -166,7 +166,9 @@ function formatPrice(price) {
 }
 
 /**
- * Update navigation based on authentication status
+ * Update navigation based on authentication status:
+ * - se NON è loggato: inserisce due link affiancati (“Iniciar Sesión” e “Registrarse”)
+ * - se è loggato: inserisce “Mi Perfil” + bottone di logout affiancati
  */
 async function updateNavigation() {
   const isLoggedIn = await checkAuth();
@@ -175,13 +177,31 @@ async function updateNavigation() {
   if (!authLinks) return;
   
   if (isLoggedIn) {
+    // Utente loggato → mostra "Mi Perfil" + bottone "Cerrar sesión"
     authLinks.innerHTML = `
-      <li><a href="profile.html">Mi Perfil</a></li>
+      <a href="profile.html">Mi Perfil</a>
+      <button id="logoutBtn">Cerrar sesión</button>
     `;
+    // Aggiungi listener al pulsante di logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const resp = await apiPost('/auth/logout', {}); // chiamo POST /api/auth/logout
+        if (resp.ok) {
+          // Dopo il logout, ricarico la pagina (tornando alla home)
+          window.location.href = 'index.html';
+        } else {
+          console.error('Logout failed:', await resp.text());
+        }
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+    });
   } else {
+    // Utente non loggato → mostra "Iniciar Sesión" e "Registrarse" affiancati
     authLinks.innerHTML = `
-      <li><a href="login.html">Iniciar Sesión</a></li>
-      <li><a href="register.html">Registrarse</a></li>
+      <a href="login.html">Iniciar Sesión</a>
+      <a href="register.html">Registrarse</a>
     `;
   }
 }
