@@ -188,7 +188,9 @@ async function openEditModal(id) {
         document.getElementById('linkMapAloj').value = property.link_map || '';
         document.getElementById('imageAlojInput').removeAttribute('required');
         
-        document.getElementById('editAlojId').value = property.id_alojamiento;
+        // CORREZIONE: usa property.id invece di property.id_alojamiento
+        document.getElementById('editAlojId').value = property.id;
+        
         document.getElementById('alojModalTitle').textContent = 'Editar Alojamiento';
         document.getElementById('formAddAlojModal').style.display = 'block';
     } catch (error) {
