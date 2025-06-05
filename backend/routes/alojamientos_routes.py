@@ -166,7 +166,7 @@ def delete_alojamiento(id):
 
 def allowed_aloj_file(filename):
     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-    return ext in current_app.config['ALLOWED_IMAGE_EXTENSIONS']
+    return ext in current_app.config.get('ALLOWED_IMAGE_EXTENSIONS', set())
 
 @alojamientos_bp.route('/upload-image', methods=['POST'])
 def upload_alojamiento_image():
@@ -176,10 +176,12 @@ def upload_alojamiento_image():
     { 'imagen_principal_ruta': '<percorso_relativo>' } in JSON.
     """
 
+    # 1) Controllo che ci sia la sessione (utente loggato)
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Autenticazione richiesta'}), 401
 
+    # 2) Controllo il file
     if 'image' not in request.files:
         return jsonify({'error': 'Nessun file inviato'}), 400
 
@@ -190,21 +192,33 @@ def upload_alojamiento_image():
     if not allowed_aloj_file(file.filename):
         return jsonify({'error': 'Formato immagine non consentito'}), 400
 
+    # 3) Costruisco il nome “sicuro”
     filename = secure_filename(file.filename)
     prefix = f"user_{user_id}_"
     filename = prefix + filename
 
-    upload_folder = current_app.config['UPLOAD_ALOJ_FOLDER']
-    os.makedirs(upload_folder, exist_ok=True)
+    # 4) Partecipo la cartella di destinazione
+    upload_folder = current_app.config.get('UPLOAD_ALOJ_FOLDER')
+    if not upload_folder:
+        return jsonify({'error': 'Configurazione cartella upload mancante'}), 500
+
+    try:
+        # Assicurati che la cartella esista
+        os.makedirs(upload_folder, exist_ok=True)
+    except Exception as e:
+        current_app.logger.error(f"Impossibile creare cartella {upload_folder}: {e}")
+        return jsonify({'error': 'Errore interno creazione cartella'}), 500
+
     save_path = os.path.join(upload_folder, filename)
 
     try:
         file.save(save_path)
     except Exception as e:
-        current_app.logger.error(f"Errore salvataggio immagine alojamiento: {e}")
+        current_app.logger.error(f"Errore salvataggio immagine alojamiento su {save_path}: {e}")
         return jsonify({'error': 'Errore interno durante il salvataggio del file'}), 500
 
-    # Percorso relativo per il frontend: es. "/static/uploads/alojamientos_img/user_5_house.jpg"
+    # 5) Ritorno il percorso relativo per il frontend
+    #    (ricordati che Apache serve “frontend/static” come “/static”)
     rel_path = f"/static/uploads/alojamientos_img/{filename}"
     return jsonify({'imagen_principal_ruta': rel_path}), 200
 
