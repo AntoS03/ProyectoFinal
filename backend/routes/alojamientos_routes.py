@@ -2,7 +2,7 @@
 import os
 from flask import Blueprint, request, jsonify, session, current_app
 from extensions import db
-from models import Alojamiento
+from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento
 from sqlalchemy import and_
 from utils import login_required
 from werkzeug.utils import secure_filename
@@ -148,10 +148,6 @@ def edit_alojamiento(id):
 @alojamientos_bp.route('/<int:id>', methods=['DELETE'])
 @login_required
 def delete_alojamiento(id):
-    """
-    Endpoint: DELETE /alojamientos/<id>
-    Solo il proprietario dell'alloggio può eliminarlo.
-    """
     user_id = session['user_id']
     a = Alojamiento.query.get(id)
     
@@ -161,9 +157,26 @@ def delete_alojamiento(id):
     if a.id_propietario != user_id:
         return jsonify({'error': 'No autorizado'}), 403
 
-    db.session.delete(a)
-    db.session.commit()
-    return jsonify({'message': 'Alojamiento eliminado'}), 200
+    try:
+        # 1. Elimina tutte le immagini associate
+        ImagenAlojamiento.query.filter_by(id_alojamiento=id).delete()
+        
+        # 2. Elimina tutti i commenti associati
+        Comentario.query.filter_by(id_alojamiento=id).delete()
+        
+        # 3. Elimina tutte le prenotazioni associate
+        Reserva.query.filter_by(id_alojamiento=id).delete()
+        
+        # 4. Finalmente elimina l'alojamiento
+        db.session.delete(a)
+        db.session.commit()
+        
+        return jsonify({'message': 'Alojamiento eliminado correctamente'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error deleting property: {str(e)}')
+        return jsonify({'error': 'Error al eliminar el alojamiento'}), 500
 
 def allowed_aloj_file(filename):
     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''

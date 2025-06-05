@@ -36,9 +36,9 @@ class Alojamiento(db.Model):
     link_map = db.Column(db.String(300), nullable=True)
 
     # Relazioni
-    reservas = db.relationship('Reserva', backref='alojamiento', lazy=True)
-    comentarios = db.relationship('Comentario', backref='alojamiento', lazy=True)
-    imagenes = db.relationship('ImagenAlojamiento', backref='alojamiento', lazy=True)
+    reservas = db.relationship('Reserva', backref='alojamiento', lazy=True, cascade="all, delete-orphan")
+    comentarios = db.relationship('Comentario', backref='alojamiento', lazy=True, cascade="all, delete-orphan")
+    imagenes = db.relationship('ImagenAlojamiento', backref='alojamiento', lazy=True, cascade="all, delete-orphan")
 
 class Reserva(db.Model):
     __tablename__ = 'Reservas'

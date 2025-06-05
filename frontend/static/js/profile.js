@@ -200,18 +200,24 @@ async function openEditModal(id) {
 }
 
 async function handleDeleteAlojamiento(id) {
-    if (!confirm('¿Estás seguro de eliminar este alojamiento? Esta acción es irreversible.')) {
+    if (!confirm('¿Estás seguro de eliminar este alojamiento? Se eliminarán todas las reservas e imágenes asociadas.')) {
         return;
     }
     
     try {
         const response = await apiDelete(`/alojamientos/${id}`);
+        
         if (response.ok) {
             showAlert('Alojamiento eliminado correctamente', 'success');
             loadOwnerAlojamientos();
         } else {
-            const error = await response.json();
-            showAlert(error.error || 'Error al eliminar el alojamiento', 'error');
+            // Gestione migliore degli errori
+            try {
+                const errorData = await response.json();
+                showAlert(errorData.error || 'Error al eliminar el alojamiento', 'error');
+            } catch (e) {
+                showAlert('Error desconocido al eliminar el alojamiento', 'error');
+            }
         }
     } catch (error) {
         console.error('Delete error:', error);
