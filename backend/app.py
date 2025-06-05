@@ -37,9 +37,9 @@ def create_app():
         db.create_all()
 
     # Registro i blueprint
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(alojamientos_bp, url_prefix='/api/alojamientos')
-    app.register_blueprint(reservas_bp, url_prefix='/api/reservas')
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(alojamientos_bp, url_prefix='/alojamientos')
+    app.register_blueprint(reservas_bp, url_prefix='/reservas')
 
     return app
 

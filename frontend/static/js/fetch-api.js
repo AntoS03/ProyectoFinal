@@ -3,7 +3,7 @@
  * Handles all API calls to the backend
  */
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = '/api';
 
 /**
  * Generic GET request to the API
