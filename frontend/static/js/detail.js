@@ -53,7 +53,7 @@ async function loadPropertyDetail(id) {
   showSpinner('propertyDetail', true);
 
   try {
-    const response = await apiGet(`/alojamientos/${id}/`);
+    const response = await apiGet(`/alojamientos/${id}`);
     
     if (response.ok) {
       const property = await response.json();
