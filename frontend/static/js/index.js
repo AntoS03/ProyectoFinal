@@ -35,7 +35,7 @@ async function loadFeaturedProperties() {
 
   try {
     // Get first 3 properties, regardless of price
-    const response = await apiGet('/alojamientos');
+    const response = await apiGet('/alojamientos/');
     
     if (response.ok) {
       const data = await response.json();
