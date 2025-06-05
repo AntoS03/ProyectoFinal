@@ -7,41 +7,45 @@
 const propertyCache = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check if user is logged in
+  // 1) Verifico se utente è loggato
   const isLoggedIn = await checkAuth();
-  
   if (!isLoggedIn) {
-    // Redirect to login page with return URL
     window.location.href = `login.html?next=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
 
-  // Update navigation
+  // 2) Aggiorno navbar
   await updateNavigation();
 
-  // Load user reservations
+  // 3) Carico dati profilo
+  await loadUserProfile();
+
+  // 4) Carico prenotazioni
   loadUserReservations();
 
-  // Setup logout button
+  // 5) Setup logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', logout);
   }
 
-  // Setup mobile menu toggle
+  // 6) Setup upload immagine
+  const uploadForm = document.getElementById('uploadImageForm');
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', handleImageUpload);
+  }
+
+  // 7) Mobile menu toggle
   const menuBtn = document.getElementById('mobileMenuBtn');
   const navMenu = document.getElementById('navMenu');
-  
   if (menuBtn && navMenu) {
     menuBtn.addEventListener('click', () => {
       navMenu.classList.toggle('active');
     });
   }
 
-  // Set active navigation item
+  // 8) Tab e navigazione attiva
   setActiveNavItem();
-
-  // Setup tabs if they exist
   setupTabs();
 });
 
@@ -249,4 +253,91 @@ function setActiveNavItem() {
       link.classList.add('active');
     }
   });
+}
+
+/**
+ * Carica i dati dell'utente loggato (GET /api/auth/me)
+ * e popola l'immagine del profilo, nome, cognome, email.
+ */
+async function loadUserProfile() {
+  try {
+    const response = await apiGet('/auth/me');
+    if (!response.ok) {
+      console.error('Impossibile caricare dati utente:', response.status);
+      return;
+    }
+    const user = await response.json();
+
+    document.getElementById('userName').textContent = user.nombre || '—';
+    document.getElementById('userSurname').textContent = user.apellidos || '—';
+    document.getElementById('userEmail').textContent = user.email || '—';
+
+    const imgEl = document.getElementById('userImage');
+    if (user.imagen_perfil_ruta) {
+      imgEl.src = user.imagen_perfil_ruta;
+    } else {
+      // rimane il default definito in HTML
+    }
+  } catch (err) {
+    console.error('Errore loadUserProfile:', err);
+  }
+}
+
+/**
+ * Handler per l'upload dell'immagine di profilo
+ */
+async function handleImageUpload(event) {
+  event.preventDefault();
+
+  const fileInput = document.getElementById('imageInput');
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    showAlert('Seleziona un file!', 'warning');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  // (opzionale) verifica lato client dimensione o tipo
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+  if (!allowedTypes.includes(file.type)) {
+    showAlert('Formato non valido. Usa PNG, JPG o GIF.', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  // Disabilitiamo il bottone per evitare doppio submit
+  const submitBtn = uploadForm.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Caricamento…';
+  }
+
+  try {
+    const response = await fetch('/api/auth/upload-profile-image', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      // Aggiorna in pagina l’immagine
+      document.getElementById('userImage').src = data.imagen_perfil_ruta;
+      showAlert('Immagine aggiornata con successo!', 'success');
+      // Pulisci l’input file
+      fileInput.value = '';
+    } else {
+      const errJson = await response.json();
+      showAlert(errJson.error || 'Errore caricamento immagine.', 'error');
+    }
+  } catch (err) {
+    console.error('Upload image error:', err);
+    showAlert('Errore di rete durante caricamento.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Cambiar foto';
+    }
+  }
 }

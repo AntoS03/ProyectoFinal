@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,11 +10,13 @@
     .tab-container {
       margin-bottom: 2rem;
     }
+
     .tab-links {
       display: flex;
       border-bottom: 1px solid #ddd;
       margin-bottom: 1rem;
     }
+
     .tab-link {
       padding: 0.75rem 1.5rem;
       cursor: pointer;
@@ -22,29 +25,36 @@
       border-bottom: 3px solid transparent;
       transition: var(--transition);
     }
+
     .tab-link:hover {
       color: var(--color-primary);
     }
+
     .tab-link.active {
       color: var(--color-primary);
       border-bottom-color: var(--color-primary);
     }
+
     .tab-content {
       display: none;
     }
+
     .tab-content.active {
       display: block;
       animation: fadeIn 0.3s ease;
     }
+
     .account-info {
       background-color: white;
       border-radius: var(--border-radius);
       padding: 1.5rem;
       box-shadow: var(--shadow);
     }
+
     .account-info p {
       margin-bottom: 0.75rem;
     }
+
     .account-label {
       font-weight: 600;
       color: var(--color-primary);
@@ -52,25 +62,28 @@
     }
   </style>
 </head>
+
 <body>
   <header>
     <div class="container header-container">
       <a href="index.html" class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
         Best Booking
       </a>
-      
+
       <button id="mobileMenuBtn" class="mobile-menu-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-      
+
       <nav id="navMenu" class="nav-menu">
         <ul>
           <li><a href="index.html">Inicio</a></li>
@@ -88,25 +101,53 @@
   <main>
     <div class="container">
       <h1>Mi Perfil</h1>
-      
+
       <div class="tab-container">
         <div class="tab-links">
           <a href="#reservasTab" class="tab-link active">Mis Reservas</a>
           <a href="#accountTab" class="tab-link">Mi Cuenta</a>
         </div>
-        
+
         <div id="reservasTab" class="tab-content active">
           <h2>Mis Reservas</h2>
           <div id="userReservations">
             <p class="text-center">Cargando tus reservas...</p>
           </div>
         </div>
-        
+
         <div id="accountTab" class="tab-content">
           <h2>Mi Cuenta</h2>
           <div class="account-info">
-            <p><span class="account-label">Email:</span> <span id="userEmail">Usuario autenticado</span></p>
-            
+            <!-- 1) Immagine del profilo -->
+            <div style="text-align:center; margin-bottom:1rem;">
+              <img id="userImage" src="static/uploads/user_profiles/default.png" alt="Imagen de perfil"
+                style="width:120px; height:120px; object-fit:cover; border-radius:50%; border:2px solid var(--color-primary);" />
+            </div>
+
+            <!-- Form per caricare nuova immagine -->
+            <form id="uploadImageForm" style="text-align:center; margin-bottom:1rem;">
+              <input type="file" id="imageInput" accept="image/*" />
+              <button type="submit" class="btn btn-outline">Cambiar foto</button>
+            </form>
+
+            <!-- 2) Nome e cognome -->
+            <p>
+              <span class="account-label">Nombre:</span>
+              <span id="userName">—</span>
+            </p>
+
+            <p>
+              <span class="account-label">Apellidos:</span>
+              <span id="userSurname">—</span>
+            </p>
+
+            <!-- 3) Email -->
+            <p>
+              <span class="account-label">Email:</span>
+              <span id="userEmail">—</span>
+            </p>
+
+            <!-- 4) Bottone per uscire -->
             <button id="logoutBtn" class="btn btn-primary">Cerrar sesión</button>
           </div>
         </div>
@@ -123,4 +164,5 @@
   <script src="static/js/fetch-api.js"></script>
   <script src="static/js/profile.js"></script>
 </body>
+
 </html>

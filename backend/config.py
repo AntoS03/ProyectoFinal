@@ -19,3 +19,10 @@ class Config:
     SESSION_COOKIE_SECURE = False       # 🔐 solo su HTTPS
 #    SESSION_COOKIE_SAMESITE = 'Lax'    # 🛡️ limita invio in contesti cross-site
     PERMANENT_SESSION_LIFETIME = 3600  # (esempio) scade dopo 1 ora
+
+    # Dove salvare le immagini di profilo (cartella "frontend/static/uploads/user_profiles")
+    USER_PROFILE_UPLOAD_FOLDER = os.path.join(basedir, '..', 'frontend', 'static', 'uploads', 'user_profiles')
+    # Estensioni consentite
+    ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    # Dimensione massima upload (opzionale)
+    MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
