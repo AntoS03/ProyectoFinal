@@ -86,10 +86,11 @@ def get_current_user():
     Restituisce i dati dell’utente loggato: nome, apellidos, email, imagen_perfil_ruta.
     Se non è loggato, restituisce 401.
     """
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Utente non autenticato'}), 401
 
-    user = Usuario.query.get(session['user_id'])
+    user = Usuario.query.get(user_id)
     if not user:
         return jsonify({'error': 'Utente non trovato'}), 404
 
@@ -98,13 +99,13 @@ def get_current_user():
         'nombre': user.nombre,
         'apellidos': user.apellidos,
         'email': user.email,
-        'imagen_perfil_ruta': user.imagen_perfil_ruta  # può essere None
+        'imagen_perfil_ruta': user.imagen_perfil_ruta or '' 
     }), 200
 
 def allowed_file(filename):
     """Controlla se l'estensione del file è permessa."""
-    ext = filename.rsplit('.', 1)[-1].lower()
-    return '.' in filename and ext in current_app.config['ALLOWED_IMAGE_EXTENSIONS']
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    return ext in current_app.config['ALLOWED_IMAGE_EXTENSIONS']
 
 @auth_bp.route('/upload-profile-image', methods=['POST'])
 def upload_profile_image():
@@ -114,46 +115,53 @@ def upload_profile_image():
     Salva l'immagine in frontend/static/uploads/user_profiles e aggiorna
     il campo imagen_perfil_ruta di Usuario.
     """
-    # 1) Verifica autenticazione
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Autenticazione richiesta'}), 401
 
-    # 2) Controlla che il file sia presente
     if 'image' not in request.files:
         return jsonify({'error': 'Nessun file inviato'}), 400
 
     file = request.files['image']
     if file.filename == '':
-        return jsonify({'error': 'Nessun file selezionato'}), 400
+        return jsonify({'error': 'Nome file non valido'}), 400
 
-    # 3) Controlla estensione
     if not allowed_file(file.filename):
-        return jsonify({'error': 'Formato non permesso. Usa png/jpg/jpeg/gif'}), 400
+        return jsonify({'error': 'Formato non consentito'}), 400
 
-    # 4) Costruisci percorso di destinazione
     filename = secure_filename(file.filename)
-    # Aggiungi user_id + timestamp per evitare conflitti
-    user_id = session['user_id']
-    ext = filename.rsplit('.', 1)[-1].lower()
-    new_name = f"user_{user_id}_{int(db.func.now().timestamp())}.{ext}"
-    upload_folder = current_app.config['USER_PROFILE_UPLOAD_FOLDER']
-    if not os.path.isdir(upload_folder):
-        os.makedirs(upload_folder, exist_ok=True)
-    save_path = os.path.join(upload_folder, new_name)
+    # Facciamo un prefisso con l’ID utente per evitare collisioni  
+    # es. "5_avatar.jpg"
+    prefix = f"user_{user_id}_"
+    filename = prefix + filename
 
-    # 5) Salva fisicamente il file
-    file.save(save_path)
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    # Se la cartella non esiste (magari qualcuno l’ha cancellata), la ricrea
+    os.makedirs(upload_folder, exist_ok=True)
 
-    # 6) Aggiorna DB: ruta relativa da frontend
-    #    Poiché la cartella è ".../frontend/static/uploads/user_profiles/",
-    #    possiamo salvare il percorso come "/static/uploads/user_profiles/<new_name>"
-    relative_path = f"/static/uploads/user_profiles/{new_name}"
+    save_path = os.path.join(upload_folder, filename)
+    try:
+        file.save(save_path)
+    except Exception as e:
+        current_app.logger.error(f"Errore salvataggio file: {e}")
+        return jsonify({'error': 'Errore interno durante il salvataggio dell\'immagine'}), 500
 
+    # Costruiamo il percorso relativo per l’URL (frontend/static ...)
+    # In HTML basterà fare <img src="/static/uploads/user_profiles/user_5_avatar.jpg">
+    rel_path = f"/static/uploads/user_profiles/{filename}"
+
+    # Aggiorniamo il record utente
     user = Usuario.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'Utente non trovato'}), 404
+    user.imagen_perfil_ruta = rel_path
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"Errore DB aggiorna immagine: {e}")
+        # Se il commit fallisce, rimuoviamo il file fisico
+        try:
+            os.remove(save_path)
+        except:
+            pass
+        return jsonify({'error': 'Errore interno durante l\'aggiornamento del DB'}), 500
 
-    user.imagen_perfil_ruta = relative_path
-    db.session.commit()
-
-    return jsonify({'imagen_perfil_ruta': relative_path}), 200
+    return jsonify({'imagen_perfil_ruta': rel_path}), 200

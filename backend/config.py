@@ -21,7 +21,7 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 3600  # (esempio) scade dopo 1 ora
 
     # Dove salvare le immagini di profilo (cartella "frontend/static/uploads/user_profiles")
-    USER_PROFILE_UPLOAD_FOLDER = os.path.join(basedir, '..', 'frontend', 'static', 'uploads', 'user_profiles')
+    UPLOAD_FOLDER = os.path.join(basedir, '..', 'frontend', 'static', 'uploads', 'user_profiles')
     # Estensioni consentite
     ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     # Dimensione massima upload (opzionale)
