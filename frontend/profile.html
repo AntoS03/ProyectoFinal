@@ -5,96 +5,113 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Perfil - BookingApp</title>
   <link rel="stylesheet" href="static/css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .tab-container {
+      margin-bottom: 2rem;
+    }
+    .tab-links {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 1rem;
+    }
+    .tab-link {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--color-text-light);
+      border-bottom: 3px solid transparent;
+      transition: var(--transition);
+    }
+    .tab-link:hover {
+      color: var(--color-primary);
+    }
+    .tab-link.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    .account-info {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .account-info p {
+      margin-bottom: 0.75rem;
+    }
+    .account-label {
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-right: 0.5rem;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <div class="container">
-      <nav>
-        <div class="logo">
-          <a href="index.html">
-            <i class="fas fa-home"></i> BookingApp
-          </a>
-        </div>
-        <ul class="nav-links">
+    <div class="container header-container">
+      <a href="index.html" class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        ProyectoFinal
+      </a>
+      
+      <button id="mobileMenuBtn" class="mobile-menu-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      
+      <nav id="navMenu" class="nav-menu">
+        <ul>
           <li><a href="index.html">Inicio</a></li>
           <li><a href="search.html">Buscar</a></li>
-          <li id="authLinks" class="hidden">
-            <a href="login.html">Iniciar Sesión</a>
-            <a href="register.html">Registrarse</a>
-          </li>
-          <li id="profileLink">
-            <a href="profile.html" class="active">Mi Perfil</a>
+          <li id="authLinks">
+            <a href="profile.html">Mi Perfil</a>
           </li>
         </ul>
-        <div class="menu-toggle">
-          <i class="fas fa-bars"></i>
-        </div>
       </nav>
     </div>
   </header>
 
+  <div id="alertContainer"></div>
+
   <main>
-    <div id="alertContainer"></div>
-    
-    <section class="profile-section">
-      <div class="container">
-        <h1>Mi Perfil</h1>
-        
-        <div id="loadingIndicator" class="loading-container">
-          <div class="spinner"></div>
-          <p>Cargando tu información...</p>
+    <div class="container">
+      <h1>Mi Perfil</h1>
+      
+      <div class="tab-container">
+        <div class="tab-links">
+          <a href="#reservasTab" class="tab-link active">Mis Reservas</a>
+          <a href="#accountTab" class="tab-link">Mi Cuenta</a>
         </div>
         
-        <div id="profileContent" class="profile-content hidden">
-          <div class="profile-tabs">
-            <button id="reservasTab" class="tab-btn active">Mis Reservas</button>
-            <button id="accountTab" class="tab-btn">Mi Cuenta</button>
+        <div id="reservasTab" class="tab-content active">
+          <h2>Mis Reservas</h2>
+          <div id="userReservations">
+            <p class="text-center">Cargando tus reservas...</p>
           </div>
-          
-          <div id="reservasContent" class="tab-content">
-            <div id="noReservas" class="no-results hidden">
-              <i class="fas fa-calendar-times"></i>
-              <p>No tienes reservas activas.</p>
-              <a href="search.html" class="btn btn-primary">Buscar Alojamientos</a>
-            </div>
+        </div>
+        
+        <div id="accountTab" class="tab-content">
+          <h2>Mi Cuenta</h2>
+          <div class="account-info">
+            <p><span class="account-label">Email:</span> <span id="userEmail">Usuario autenticado</span></p>
             
-            <div id="reservasTable" class="table-container hidden">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Alojamiento</th>
-                    <th>Fecha de Llegada</th>
-                    <th>Fecha de Salida</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="reservasTableBody">
-                  <!-- Reservations will be populated here -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <div id="accountContent" class="tab-content hidden">
-            <div class="user-info">
-              <div class="user-avatar">
-                <i class="fas fa-user-circle"></i>
-              </div>
-              <div class="user-details">
-                <h3 id="userEmail">Correo electrónico</h3>
-                <p id="userName">Nombre y apellidos</p>
-              </div>
-            </div>
-            
-            <button id="logoutBtn" class="btn btn-danger">
-              <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-            </button>
+            <button id="logoutBtn" class="btn btn-primary">Cerrar sesión</button>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   </main>
 
   <footer>
@@ -103,25 +120,7 @@
     </div>
   </footer>
 
-  <!-- Modal for confirmation -->
-  <div id="confirmModal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modalTitle">Confirmar acción</h3>
-        <span class="close-modal">&times;</span>
-      </div>
-      <div class="modal-body">
-        <p id="modalMessage">¿Estás seguro de que deseas realizar esta acción?</p>
-      </div>
-      <div class="modal-footer">
-        <button id="modalCancel" class="btn btn-outline">Cancelar</button>
-        <button id="modalConfirm" class="btn btn-danger">Confirmar</button>
-      </div>
-    </div>
-  </div>
-
   <script src="static/js/fetch-api.js"></script>
-  <script src="static/js/common.js"></script>
   <script src="static/js/profile.js"></script>
 </body>
 </html>

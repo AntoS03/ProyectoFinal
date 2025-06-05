@@ -3,141 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalles de Alojamiento - BookingApp</title>
+  <title>Detalle de Alojamiento - BookingApp</title>
   <link rel="stylesheet" href="static/css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <header>
-    <div class="container">
-      <nav>
-        <div class="logo">
-          <a href="index.html">
-            <i class="fas fa-home"></i> BookingApp
-          </a>
-        </div>
-        <ul class="nav-links">
+    <div class="container header-container">
+      <a href="index.html" class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        ProyectoFinal
+      </a>
+      
+      <button id="mobileMenuBtn" class="mobile-menu-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      
+      <nav id="navMenu" class="nav-menu">
+        <ul>
           <li><a href="index.html">Inicio</a></li>
           <li><a href="search.html">Buscar</a></li>
           <li id="authLinks">
+            <!-- This will be populated by updateNavigation() in JS -->
             <a href="login.html">Iniciar Sesión</a>
             <a href="register.html">Registrarse</a>
           </li>
-          <li id="profileLink" class="hidden">
-            <a href="profile.html">Mi Perfil</a>
-          </li>
         </ul>
-        <div class="menu-toggle">
-          <i class="fas fa-bars"></i>
-        </div>
       </nav>
     </div>
   </header>
 
+  <div id="alertContainer"></div>
+
   <main>
-    <div id="alertContainer"></div>
-    
-    <section class="detail-section">
-      <div class="container">
-        <nav class="breadcrumb">
-          <a href="index.html">Inicio</a> &gt;
-          <a href="search.html">Buscar</a> &gt;
-          <span id="breadcrumbName">Alojamiento</span>
-        </nav>
-        
-        <div id="loadingIndicator" class="loading-container">
-          <div class="spinner"></div>
-          <p>Cargando detalles del alojamiento...</p>
-        </div>
-        
-        <div id="alojamientoNotFound" class="not-found hidden">
-          <i class="fas fa-exclamation-circle"></i>
-          <h2>Alojamiento no encontrado</h2>
-          <p>El alojamiento que buscas no existe o no está disponible.</p>
-          <a href="search.html" class="btn btn-primary">Volver a la búsqueda</a>
-        </div>
-        
-        <div id="alojamientoDetail" class="detail-container hidden">
-          <h1 id="nombreAlojamiento"></h1>
-          
-          <div class="detail-grid">
-            <div class="detail-image">
-              <img id="imagenAlojamiento" src="" alt="Imagen del alojamiento">
-            </div>
-            
-            <div class="detail-info">
-              <div class="info-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <h3>Ubicación</h3>
-                  <p id="direccionAlojamiento"></p>
-                  <p id="ciudadAlojamiento"></p>
-                  <p id="estadoAlojamiento"></p>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <i class="fas fa-euro-sign"></i>
-                <div>
-                  <h3>Precio</h3>
-                  <p id="precioAlojamiento" class="precio"></p>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <i class="fas fa-align-left"></i>
-                <div>
-                  <h3>Descripción</h3>
-                  <p id="descripcionAlojamiento"></p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div id="mapContainer" class="map-container hidden">
-            <h3>Ubicación en el mapa</h3>
-            <div id="mapFrame"></div>
-          </div>
-          
-          <div class="reservation-section">
-            <h2>Reservar este alojamiento</h2>
-            
-            <div id="authRequired" class="auth-required hidden">
-              <p>Para reservar debes <a href="login.html" class="btn btn-secondary">iniciar sesión</a></p>
-            </div>
-            
-            <form id="reservationForm" class="hidden">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="fechaInicio">Fecha de llegada</label>
-                  <input type="date" id="fechaInicio" class="form-control" required>
-                  <small>Elige la fecha de llegada</small>
-                </div>
-                
-                <div class="form-group">
-                  <label for="fechaFin">Fecha de salida</label>
-                  <input type="date" id="fechaFin" class="form-control" required>
-                  <small>Elige la fecha de salida</small>
-                </div>
-              </div>
-              
-              <div id="dateError" class="alert-error hidden">
-                La fecha de salida debe ser posterior a la fecha de llegada
-              </div>
-              
-              <div class="form-group">
-                <button type="submit" id="reserveButton" class="btn btn-primary">
-                  <i class="fas fa-calendar-check"></i> Reservar ahora
-                </button>
-                <button type="button" id="resetDates" class="btn btn-outline">
-                  Reiniciar fechas
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+    <div class="container">
+      <div id="propertyDetail">
+        <p class="text-center">Cargando detalles del alojamiento...</p>
       </div>
-    </section>
+      
+      <div id="bookingContainer" class="row">
+        <!-- This will be populated by toggleBookingForm() in JS -->
+      </div>
+    </div>
   </main>
 
   <footer>
@@ -147,7 +60,6 @@
   </footer>
 
   <script src="static/js/fetch-api.js"></script>
-  <script src="static/js/common.js"></script>
   <script src="static/js/detail.js"></script>
 </body>
 </html>

@@ -1,367 +1,252 @@
 /**
- * Profile page functionality
+ * Profile page script
+ * Handles user profile and reservations
  */
 
-// DOM Elements
-const loadingIndicator = document.getElementById('loadingIndicator');
-const profileContent = document.getElementById('profileContent');
-const reservasTab = document.getElementById('reservasTab');
-const accountTab = document.getElementById('accountTab');
-const reservasContent = document.getElementById('reservasContent');
-const accountContent = document.getElementById('accountContent');
-const noReservas = document.getElementById('noReservas');
-const reservasTable = document.getElementById('reservasTable');
-const reservasTableBody = document.getElementById('reservasTableBody');
-const userEmail = document.getElementById('userEmail');
-const userName = document.getElementById('userName');
-const logoutBtn = document.getElementById('logoutBtn');
-const confirmModal = document.getElementById('confirmModal');
-const modalTitle = document.getElementById('modalTitle');
-const modalMessage = document.getElementById('modalMessage');
-const modalCancel = document.getElementById('modalCancel');
-const modalConfirm = document.getElementById('modalConfirm');
+// Cache for property details to avoid repeated API calls
+const propertyCache = {};
 
-// Current user info
-let currentUserEmail = '';
-
-// Reservation action state
-let pendingAction = null;
-let pendingReservationId = null;
-
-/**
- * Initialize profile page
- */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check if user is authenticated
-  const isLoggedIn = await isAuthenticated();
+  // Check if user is logged in
+  const isLoggedIn = await checkAuth();
   
   if (!isLoggedIn) {
-    // Redirect to login page if not authenticated
-    window.location.href = 'login.html?next=profile.html';
+    // Redirect to login page with return URL
+    window.location.href = `login.html?next=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
-  
-  // Set up tabs
-  setupTabs();
-  
-  // Set up logout button
-  setupLogout();
-  
-  // Set up modal
-  setupModal();
-  
+
+  // Update navigation
+  await updateNavigation();
+
   // Load user reservations
-  await loadReservations();
-  
-  // Try to load user data
-  await loadUserData();
-});
+  loadUserReservations();
 
-/**
- * Set up tab switching functionality
- */
-function setupTabs() {
-  if (!reservasTab || !accountTab || !reservasContent || !accountContent) return;
-  
-  reservasTab.addEventListener('click', () => {
-    reservasTab.classList.add('active');
-    accountTab.classList.remove('active');
-    reservasContent.classList.remove('hidden');
-    accountContent.classList.add('hidden');
-  });
-  
-  accountTab.addEventListener('click', () => {
-    accountTab.classList.add('active');
-    reservasTab.classList.remove('active');
-    accountContent.classList.remove('hidden');
-    reservasContent.classList.add('hidden');
-  });
-}
-
-/**
- * Set up logout button
- */
-function setupLogout() {
-  if (!logoutBtn) return;
-  
-  logoutBtn.addEventListener('click', async () => {
-    showModal(
-      'Cerrar sesión',
-      '¿Estás seguro de que deseas cerrar la sesión?',
-      async () => {
-        try {
-          const response = await apiPost('/auth/logout');
-          
-          if (response.ok) {
-            // Redirect to home page
-            window.location.href = 'index.html';
-          } else {
-            showAlert('Error al cerrar sesión. Inténtalo de nuevo.', 'error');
-          }
-        } catch (error) {
-          console.error('Logout error:', error);
-          showAlert('Error al cerrar sesión. Inténtalo de nuevo.', 'error');
-        }
-      }
-    );
-  });
-}
-
-/**
- * Set up modal functionality
- */
-function setupModal() {
-  if (!confirmModal || !modalCancel) return;
-  
-  // Close modal when clicking the cancel button
-  modalCancel.addEventListener('click', hideModal);
-  
-  // Close modal when clicking the X button
-  const closeModal = document.querySelector('.close-modal');
-  if (closeModal) {
-    closeModal.addEventListener('click', hideModal);
+  // Setup logout button
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
   }
-  
-  // Close modal when clicking outside the modal content
-  confirmModal.addEventListener('click', (e) => {
-    if (e.target === confirmModal) {
-      hideModal();
-    }
-  });
-}
 
-/**
- * Show confirmation modal
- * @param {string} title - Modal title
- * @param {string} message - Modal message
- * @param {Function} confirmCallback - Function to call on confirm
- */
-function showModal(title, message, confirmCallback) {
-  if (!confirmModal || !modalTitle || !modalMessage || !modalConfirm) return;
+  // Setup mobile menu toggle
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const navMenu = document.getElementById('navMenu');
   
-  // Set modal content
-  modalTitle.textContent = title;
-  modalMessage.textContent = message;
-  
-  // Set confirm callback
-  modalConfirm.onclick = () => {
-    hideModal();
-    if (confirmCallback) confirmCallback();
-  };
-  
-  // Show modal
-  confirmModal.classList.remove('hidden');
-}
+  if (menuBtn && navMenu) {
+    menuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  }
 
-/**
- * Hide confirmation modal
- */
-function hideModal() {
-  if (!confirmModal) return;
-  confirmModal.classList.add('hidden');
-}
+  // Set active navigation item
+  setActiveNavItem();
+
+  // Setup tabs if they exist
+  setupTabs();
+});
 
 /**
  * Load user reservations
  */
-async function loadReservations() {
-  if (!loadingIndicator || !profileContent || !reservasTableBody || !noReservas || !reservasTable) return;
-  
+async function loadUserReservations() {
+  const reservationsContainer = document.getElementById('userReservations');
+  if (!reservationsContainer) return;
+
+  showSpinner('userReservations', true);
+
   try {
-    // Show loading indicator
-    showSpinner(loadingIndicator);
-    profileContent.classList.add('hidden');
-    
-    // Fetch reservations
     const response = await apiGet('/reservas');
     
-    // Hide loading indicator
-    hideSpinner(loadingIndicator);
-    profileContent.classList.remove('hidden');
-    
     if (response.ok) {
-      const reservas = await response.json();
+      const reservations = await response.json();
       
-      if (reservas.length === 0) {
-        // No reservations
-        noReservas.classList.remove('hidden');
-        reservasTable.classList.add('hidden');
+      if (reservations.length === 0) {
+        reservationsContainer.innerHTML = `
+          <div class="alert alert-info">
+            No tienes reservas. <a href="search.html">Buscar alojamientos</a>
+          </div>
+        `;
+        return;
+      }
+      
+      await renderReservations(reservations);
+      setupReservationActions();
+    } else {
+      if (response.status === 401) {
+        // Session expired, redirect to login
+        window.location.href = 'login.html';
       } else {
-        // Render reservations
-        await renderReservations(reservas);
-        noReservas.classList.add('hidden');
-        reservasTable.classList.remove('hidden');
+        showAlert('Error al cargar las reservas.', 'error');
       }
-    } else {
-      // Error fetching reservations
-      showAlert('Error al cargar tus reservas. Inténtalo de nuevo.', 'error');
     }
   } catch (error) {
-    // Hide loading indicator
-    hideSpinner(loadingIndicator);
-    profileContent.classList.remove('hidden');
-    
-    // Show error
-    showAlert('Error al cargar tus reservas. Inténtalo de nuevo.', 'error');
-    console.error('Error in loadReservations:', error);
+    console.error('Error:', error);
+    showAlert('Error al cargar las reservas.', 'error');
+  } finally {
+    hideSpinner('userReservations');
   }
 }
 
 /**
- * Render reservations in the table
- * @param {Array} reservas - List of reservations
+ * Render user reservations
+ * @param {Array} reservations - Array of reservation objects
  */
-async function renderReservations(reservas) {
-  if (!reservasTableBody) return;
-  
-  // Clear previous rows
-  reservasTableBody.innerHTML = '';
-  
-  // Create and append row for each reservation
-  for (const reserva of reservas) {
-    const row = document.createElement('tr');
+async function renderReservations(reservations) {
+  const container = document.getElementById('userReservations');
+  if (!container) return;
+
+  // Fetch property details for each reservation
+  const reservationsWithDetails = await Promise.all(reservations.map(async (reserva) => {
+    let property = propertyCache[reserva.id_alojamiento];
     
-    // Fetch alojamiento details
-    const alojamiento = await getAlojamientoDetails(reserva.id_alojamiento);
-    const alojamientoNombre = alojamiento ? alojamiento.nombre : `Alojamiento ${reserva.id_alojamiento}`;
-    
-    row.innerHTML = `
-      <td>
-        <a href="detail.html?id=${reserva.id_alojamiento}" class="alojamiento-link">
-          ${alojamientoNombre}
-        </a>
-      </td>
-      <td>${formatDate(reserva.fecha_inicio)}</td>
-      <td>${formatDate(reserva.fecha_fin)}</td>
-      <td><span class="estado-${reserva.estado_reserva.toLowerCase()}">${reserva.estado_reserva}</span></td>
-      <td class="actions-cell">
-        ${getReservationActions(reserva)}
-      </td>
-    `;
-    
-    reservasTableBody.appendChild(row);
-    
-    // Add event listeners to action buttons
-    if (reserva.estado_reserva === 'Pendiente') {
-      const cancelBtn = row.querySelector('.cancel-btn');
-      if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => handleCancelReservation(reserva.id));
-      }
-      
-      const confirmBtn = row.querySelector('.confirm-btn');
-      if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => handleConfirmReservation(reserva.id));
+    if (!property) {
+      try {
+        const response = await apiGet(`/alojamientos/${reserva.id_alojamiento}`);
+        if (response.ok) {
+          property = await response.json();
+          propertyCache[reserva.id_alojamiento] = property;
+        } else {
+          property = { nombre: 'Alojamiento no disponible' };
+        }
+      } catch (error) {
+        console.error('Error fetching property:', error);
+        property = { nombre: 'Alojamiento no disponible' };
       }
     }
-  }
-}
+    
+    return { ...reserva, property };
+  }));
 
-/**
- * Get HTML for reservation action buttons
- * @param {object} reserva - Reservation data
- * @returns {string} - HTML for action buttons
- */
-function getReservationActions(reserva) {
-  if (reserva.estado_reserva !== 'Pendiente') {
-    return '<span class="no-actions">No hay acciones disponibles</span>';
-  }
-  
-  let actions = `
-    <button class="btn btn-danger cancel-btn">
-      <i class="fas fa-times"></i> Cancelar
-    </button>
+  // Sort reservations: Pending first, then Confirmed, then Canceled
+  reservationsWithDetails.sort((a, b) => {
+    const order = { 'Pendiente': 0, 'Confirmada': 1, 'Cancelada': 2 };
+    return order[a.estado_reserva] - order[b.estado_reserva];
+  });
+
+  const tableHTML = `
+    <table class="reservations-table">
+      <thead>
+        <tr>
+          <th>Alojamiento</th>
+          <th>Fecha Inicio</th>
+          <th>Fecha Fin</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${reservationsWithDetails.map(reserva => {
+          const badgeClass = reserva.estado_reserva === 'Pendiente' 
+            ? 'badge-pending' 
+            : (reserva.estado_reserva === 'Confirmada' ? 'badge-confirmed' : 'badge-canceled');
+          
+          const actions = reserva.estado_reserva === 'Pendiente'
+            ? `<button class="btn btn-sm btn-outline cancel-reservation" data-id="${reserva.id_reserva}">Cancelar</button>`
+            : '';
+
+          return `
+            <tr>
+              <td><a href="detail.html?id=${reserva.id_alojamiento}">${reserva.property.nombre}</a></td>
+              <td>${formatDate(reserva.fecha_inicio)}</td>
+              <td>${formatDate(reserva.fecha_fin)}</td>
+              <td><span class="badge ${badgeClass}">${reserva.estado_reserva}</span></td>
+              <td>${actions}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
   `;
-  
-  // Add confirm button if user is the owner
-  // Note: This would require additional backend info or endpoint to determine ownership
-  // For now, we'll omit the confirm button as we can't reliably determine ownership
-  
-  return actions;
+
+  container.innerHTML = tableHTML;
 }
 
 /**
- * Handle cancel reservation action
- * @param {string|number} reservationId - Reservation ID
+ * Setup reservation action buttons
  */
-function handleCancelReservation(reservationId) {
-  showModal(
-    'Cancelar reserva',
-    '¿Estás seguro de que deseas cancelar esta reserva?',
-    async () => {
-      try {
-        const response = await apiDelete(`/reservas/${reservationId}`);
-        
-        if (response.ok) {
-          showAlert('Reserva cancelada correctamente', 'success');
-          // Reload reservations
-          await loadReservations();
-        } else {
-          showAlert('Error al cancelar la reserva. Inténtalo de nuevo.', 'error');
+function setupReservationActions() {
+  // Cancel reservation buttons
+  const cancelButtons = document.querySelectorAll('.cancel-reservation');
+  cancelButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+      const reservationId = button.dataset.id;
+      
+      if (confirm('¿Seguro que deseas cancelar esta reserva?')) {
+        try {
+          const response = await apiDelete(`/reservas/${reservationId}`);
+          
+          if (response.ok) {
+            showAlert('Reserva cancelada correctamente.', 'success');
+            // Reload reservations
+            loadUserReservations();
+          } else {
+            const error = await response.json();
+            showAlert(error.error || 'Error al cancelar la reserva.', 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showAlert('Error al cancelar la reserva.', 'error');
         }
-      } catch (error) {
-        console.error('Error canceling reservation:', error);
-        showAlert('Error al cancelar la reserva. Inténtalo de nuevo.', 'error');
       }
-    }
-  );
+    });
+  });
 }
 
 /**
- * Handle confirm reservation action
- * @param {string|number} reservationId - Reservation ID
+ * Logout user
  */
-function handleConfirmReservation(reservationId) {
-  showModal(
-    'Confirmar reserva',
-    '¿Estás seguro de que deseas confirmar esta reserva?',
-    async () => {
-      try {
-        const response = await apiPut(`/reservas/${reservationId}/confirm`, {});
-        
-        if (response.ok) {
-          showAlert('Reserva confirmada correctamente', 'success');
-          // Reload reservations
-          await loadReservations();
-        } else {
-          showAlert('Error al confirmar la reserva. Inténtalo de nuevo.', 'error');
-        }
-      } catch (error) {
-        console.error('Error confirming reservation:', error);
-        showAlert('Error al confirmar la reserva. Inténtalo de nuevo.', 'error');
-      }
-    }
-  );
-}
-
-/**
- * Load user data
- */
-async function loadUserData() {
-  if (!userEmail || !userName) return;
-  
+async function logout() {
   try {
-    // Try to get user data
-    // Note: This assumes there's a user endpoint. If not, we'll just use minimal info.
-    const response = await apiGet('/auth/user');
+    const response = await apiPost('/auth/logout');
     
     if (response.ok) {
-      const user = await response.json();
-      
-      userEmail.textContent = user.email || 'Correo no disponible';
-      currentUserEmail = user.email || '';
-      
-      const fullName = [user.nombre, user.apellidos].filter(Boolean).join(' ');
-      userName.textContent = fullName || 'Nombre no disponible';
+      // Redirect to home page
+      window.location.href = 'index.html';
     } else {
-      // If no specific user endpoint, just show minimal info
-      userEmail.textContent = 'Usuario autenticado';
-      userName.textContent = 'Datos no disponibles';
+      showAlert('Error al cerrar sesión.', 'error');
     }
   } catch (error) {
-    console.error('Error loading user data:', error);
-    
-    // Fallback
-    userEmail.textContent = 'Usuario autenticado';
-    userName.textContent = 'Datos no disponibles';
+    console.error('Error:', error);
+    showAlert('Error al cerrar sesión.', 'error');
   }
+}
+
+/**
+ * Setup tabs functionality
+ */
+function setupTabs() {
+  const tabLinks = document.querySelectorAll('.tab-link');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  if (tabLinks.length === 0 || tabContents.length === 0) return;
+  
+  tabLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      // Remove active class from all tabs
+      tabLinks.forEach(l => l.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+      
+      // Add active class to clicked tab
+      link.classList.add('active');
+      
+      // Show corresponding content
+      const tabId = link.getAttribute('href').substring(1);
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+}
+
+/**
+ * Set active navigation item based on current page
+ */
+function setActiveNavItem() {
+  const navLinks = document.querySelectorAll('nav a');
+  
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === 'profile.html') {
+      link.classList.add('active');
+    }
+  });
 }

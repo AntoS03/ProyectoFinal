@@ -1,293 +1,313 @@
 /**
- * Detail page functionality
+ * Detail page script
+ * Handles property detail view and booking
  */
 
-// DOM Elements
-const alojamientoDetail = document.getElementById('alojamientoDetail');
-const alojamientoNotFound = document.getElementById('alojamientoNotFound');
-const loadingIndicator = document.getElementById('loadingIndicator');
-const breadcrumbName = document.getElementById('breadcrumbName');
-const nombreAlojamiento = document.getElementById('nombreAlojamiento');
-const imagenAlojamiento = document.getElementById('imagenAlojamiento');
-const direccionAlojamiento = document.getElementById('direccionAlojamiento');
-const ciudadAlojamiento = document.getElementById('ciudadAlojamiento');
-const estadoAlojamiento = document.getElementById('estadoAlojamiento');
-const descripcionAlojamiento = document.getElementById('descripcionAlojamiento');
-const precioAlojamiento = document.getElementById('precioAlojamiento');
-const mapContainer = document.getElementById('mapContainer');
-const mapFrame = document.getElementById('mapFrame');
-const authRequired = document.getElementById('authRequired');
-const reservationForm = document.getElementById('reservationForm');
-const fechaInicio = document.getElementById('fechaInicio');
-const fechaFin = document.getElementById('fechaFin');
-const dateError = document.getElementById('dateError');
-const reserveButton = document.getElementById('reserveButton');
-const resetDates = document.getElementById('resetDates');
-
-// Store alojamiento id globally
-let alojamientoId = null;
-
-/**
- * Initialize detail page
- */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Get alojamiento ID from URL
-  const params = getQueryParams();
-  alojamientoId = params.id;
-  
-  if (!alojamientoId) {
-    // No ID provided
-    showNotFound();
+  // Check authentication and update navigation
+  await updateNavigation();
+
+  // Get property ID from URL
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+
+  if (!id) {
+    showAlert('Alojamiento no encontrado. ID no especificado.', 'error');
     return;
   }
+
+  // Load property details
+  loadPropertyDetail(id);
+
+  // Setup mobile menu toggle
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const navMenu = document.getElementById('navMenu');
   
-  // Load alojamiento details
-  await loadAlojamientoDetails();
-  
-  // Setup date inputs
-  setupDateInputs();
-  
-  // Setup reservation form
-  setupReservationForm();
-  
-  // Check if user is authenticated
-  await checkAuthenticationStatus();
+  if (menuBtn && navMenu) {
+    menuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  }
+
+  // Set active navigation item
+  setActiveNavItem();
+
+  // Setup booking form submission
+  const bookingForm = document.getElementById('bookingForm');
+  if (bookingForm) {
+    bookingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      createReservation(id);
+    });
+  }
 });
 
 /**
- * Show "not found" state
+ * Load property detail
+ * @param {string} id - Property ID
  */
-function showNotFound() {
-  if (loadingIndicator) loadingIndicator.classList.add('hidden');
-  if (alojamientoDetail) alojamientoDetail.classList.add('hidden');
-  if (alojamientoNotFound) alojamientoNotFound.classList.remove('hidden');
-}
+async function loadPropertyDetail(id) {
+  const detailContainer = document.getElementById('propertyDetail');
+  if (!detailContainer) return;
 
-/**
- * Load alojamiento details
- */
-async function loadAlojamientoDetails() {
-  if (!alojamientoDetail || !loadingIndicator || !alojamientoId) return;
-  
+  showSpinner('propertyDetail', true);
+
   try {
-    // Show loading indicator
-    showSpinner(loadingIndicator);
-    alojamientoDetail.classList.add('hidden');
-    alojamientoNotFound.classList.add('hidden');
-    
-    // Fetch alojamiento details
-    const response = await apiGet(`/alojamientos/${alojamientoId}`);
-    
-    // Hide loading indicator
-    hideSpinner(loadingIndicator);
+    const response = await apiGet(`/alojamientos/${id}`);
     
     if (response.ok) {
-      const alojamiento = await response.json();
+      const property = await response.json();
+      renderPropertyDetail(property);
+      document.title = `${property.nombre} - ProyectoFinal`;
       
-      // Update UI with alojamiento details
-      renderAlojamientoDetails(alojamiento);
-      alojamientoDetail.classList.remove('hidden');
+      // Check if user is authenticated to show booking form
+      const isLoggedIn = await checkAuth();
+      toggleBookingForm(isLoggedIn);
     } else {
-      // Alojamiento not found or error
-      showNotFound();
-    }
-  } catch (error) {
-    // Hide loading indicator
-    hideSpinner(loadingIndicator);
-    
-    // Show error
-    showNotFound();
-    console.error('Error in loadAlojamientoDetails:', error);
-  }
-}
-
-/**
- * Render alojamiento details
- * @param {object} alojamiento - Alojamiento data
- */
-function renderAlojamientoDetails(alojamiento) {
-  // Update breadcrumb
-  if (breadcrumbName) breadcrumbName.textContent = alojamiento.nombre;
-  
-  // Update page title
-  document.title = `${alojamiento.nombre} - ProyectoFinal`;
-  
-  // Basic details
-  if (nombreAlojamiento) nombreAlojamiento.textContent = alojamiento.nombre;
-  
-  // Image
-  if (imagenAlojamiento) {
-    // Use placeholder image if no image is available
-    const imageSrc = alojamiento.imagen_principal_ruta || 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
-    imagenAlojamiento.src = imageSrc;
-    imagenAlojamiento.alt = `Imagen de ${alojamiento.nombre}`;
-  }
-  
-  // Location details
-  if (direccionAlojamiento) direccionAlojamiento.textContent = alojamiento.direccion || 'Dirección no disponible';
-  if (ciudadAlojamiento) ciudadAlojamiento.textContent = alojamiento.ciudad || 'Ciudad no disponible';
-  if (estadoAlojamiento) estadoAlojamiento.textContent = alojamiento.estado_o_pais || 'Estado/País no disponible';
-  
-  // Description
-  if (descripcionAlojamiento) descripcionAlojamiento.textContent = alojamiento.descripcion || 'Descripción no disponible';
-  
-  // Price
-  if (precioAlojamiento) precioAlojamiento.textContent = `${formatPrice(alojamiento.precio_noche)} / noche`;
-  
-  // Map
-  if (mapContainer && mapFrame && alojamiento.link_map) {
-    mapFrame.innerHTML = `<iframe src="${alojamiento.link_map}" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`;
-    mapContainer.classList.remove('hidden');
-  } else if (mapContainer) {
-    mapContainer.classList.add('hidden');
-  }
-}
-
-/**
- * Setup date input fields
- */
-function setupDateInputs() {
-  if (!fechaInicio || !fechaFin) return;
-  
-  // Set minimum date to today
-  setMinDateToday(fechaInicio);
-  setMinDateToday(fechaFin);
-  
-  // Add event listeners
-  fechaInicio.addEventListener('change', () => {
-    // Set minimum date for checkout to be after checkin
-    if (fechaInicio.value) {
-      fechaFin.min = fechaInicio.value;
-      
-      // If current checkout date is before new checkin date, update it
-      if (fechaFin.value && fechaFin.value < fechaInicio.value) {
-        fechaFin.value = fechaInicio.value;
+      if (response.status === 404) {
+        showAlert('Alojamiento no encontrado.', 'error');
+      } else {
+        showAlert('Error al cargar los detalles del alojamiento.', 'error');
       }
     }
-    
-    validateDates();
-  });
-  
-  fechaFin.addEventListener('change', validateDates);
-  
-  // Reset dates button
-  if (resetDates) {
-    resetDates.addEventListener('click', () => {
-      fechaInicio.value = '';
-      fechaFin.value = '';
-      validateDates();
-    });
+  } catch (error) {
+    console.error('Error:', error);
+    showAlert('Error al cargar los detalles del alojamiento.', 'error');
+  } finally {
+    hideSpinner('propertyDetail');
   }
 }
 
 /**
- * Validate date selections
- * @returns {boolean} - True if dates are valid
+ * Render property detail
+ * @param {Object} property - Property object
+ */
+function renderPropertyDetail(property) {
+  const container = document.getElementById('propertyDetail');
+  if (!container) return;
+
+  // Build breadcrumbs
+  const breadcrumbs = `
+    <div class="breadcrumbs">
+      <a href="index.html">Inicio</a>
+      <span>></span>
+      <a href="search.html">Buscar</a>
+      <span>></span>
+      <span class="current">${property.nombre}</span>
+    </div>
+  `;
+
+  // Build map if link exists
+  const mapHTML = property.link_map ? `
+    <div class="property-map">
+      <iframe src="${property.link_map}" allowfullscreen></iframe>
+    </div>
+  ` : '';
+
+  container.innerHTML = `
+    ${breadcrumbs}
+    <div class="property-detail">
+      <div class="property-header">
+        <h1 class="property-title">${property.nombre}</h1>
+        <div class="property-location">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          ${property.direccion}, ${property.ciudad}, ${property.estado_o_pais}
+        </div>
+      </div>
+      
+      <div class="property-image">
+        <img src="${property.imagen_principal_ruta || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg'}" 
+             alt="Imagen principal de ${property.nombre}" />
+      </div>
+      
+      <div class="property-content">
+        <div class="property-info">
+          <div class="property-price">${formatPrice(property.precio_noche)} / noche</div>
+          <div class="property-description">${property.descripcion}</div>
+        </div>
+        
+        ${mapHTML}
+      </div>
+    </div>
+  `;
+
+  // Store property ID for booking
+  if (document.getElementById('bookingForm')) {
+    document.getElementById('bookingForm').dataset.propertyId = property.id;
+  }
+}
+
+/**
+ * Toggle booking form based on authentication status
+ * @param {boolean} isLoggedIn - Whether user is logged in
+ */
+function toggleBookingForm(isLoggedIn) {
+  const bookingContainer = document.getElementById('bookingContainer');
+  if (!bookingContainer) return;
+
+  if (isLoggedIn) {
+    bookingContainer.innerHTML = `
+      <div class="booking-form">
+        <h2>Reservar este alojamiento</h2>
+        <form id="bookingForm">
+          <div class="booking-dates">
+            <div class="booking-date">
+              <div class="form-group">
+                <label for="fechaInicio" class="form-label">Fecha de llegada</label>
+                <input type="date" id="fechaInicio" class="form-control" required>
+                <div id="fechaInicioError" class="invalid-feedback"></div>
+              </div>
+            </div>
+            <div class="booking-date">
+              <div class="form-group">
+                <label for="fechaFin" class="form-label">Fecha de salida</label>
+                <input type="date" id="fechaFin" class="form-control" required>
+                <div id="fechaFinError" class="invalid-feedback"></div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" id="bookBtn" class="btn btn-primary btn-block">Reservar ahora</button>
+        </form>
+      </div>
+    `;
+
+    // Set min date for date inputs (today)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaInicio').min = today;
+    document.getElementById('fechaFin').min = today;
+
+    // Add event listener to validate dates
+    document.getElementById('fechaInicio').addEventListener('change', validateDates);
+    document.getElementById('fechaFin').addEventListener('change', validateDates);
+
+    // Setup booking form submission
+    const bookingForm = document.getElementById('bookingForm');
+    if (bookingForm) {
+      bookingForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (validateDates()) {
+          createReservation();
+        }
+      });
+    }
+  } else {
+    bookingContainer.innerHTML = `
+      <div class="booking-form">
+        <p>Para reservar debes <a href="login.html">iniciar sesión</a>.</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Validate booking dates
+ * @returns {boolean} - Whether dates are valid
  */
 function validateDates() {
-  if (!fechaInicio || !fechaFin || !dateError) return true;
+  const fechaInicio = document.getElementById('fechaInicio');
+  const fechaFin = document.getElementById('fechaFin');
+  const fechaInicioError = document.getElementById('fechaInicioError');
+  const fechaFinError = document.getElementById('fechaFinError');
   
-  const startDate = fechaInicio.value;
-  const endDate = fechaFin.value;
-  
-  // Hide error by default
-  dateError.classList.add('hidden');
-  
-  // Both dates must be selected
-  if (!startDate || !endDate) return false;
-  
-  // End date must be after start date
-  if (endDate <= startDate) {
-    dateError.classList.remove('hidden');
-    return false;
+  let isValid = true;
+
+  // Reset errors
+  fechaInicioError.textContent = '';
+  fechaFinError.textContent = '';
+  fechaInicio.classList.remove('is-invalid');
+  fechaFin.classList.remove('is-invalid');
+
+  // Check if dates are selected
+  if (!fechaInicio.value) {
+    fechaInicioError.textContent = 'Selecciona una fecha de llegada';
+    fechaInicio.classList.add('is-invalid');
+    isValid = false;
   }
-  
-  return true;
+
+  if (!fechaFin.value) {
+    fechaFinError.textContent = 'Selecciona una fecha de salida';
+    fechaFin.classList.add('is-invalid');
+    isValid = false;
+  }
+
+  // Check if end date is after start date
+  if (fechaInicio.value && fechaFin.value) {
+    const start = new Date(fechaInicio.value);
+    const end = new Date(fechaFin.value);
+    
+    if (end <= start) {
+      fechaFinError.textContent = 'La fecha de salida debe ser posterior a la fecha de llegada';
+      fechaFin.classList.add('is-invalid');
+      isValid = false;
+    }
+  }
+
+  return isValid;
 }
 
 /**
- * Setup reservation form submission
+ * Create a reservation
  */
-function setupReservationForm() {
-  if (!reservationForm || !alojamientoId) return;
-  
-  reservationForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Validate dates
-    if (!validateDates()) {
-      return;
-    }
-    
-    // Disable form while submitting
-    reserveButton.disabled = true;
-    reserveButton.innerHTML = '<span class="spinner"></span> Reservando...';
-    
-    try {
-      // Create reservation
-      const reservation = {
-        id_alojamiento: alojamientoId,
-        fecha_inicio: fechaInicio.value,
-        fecha_fin: fechaFin.value
-      };
-      
-      const response = await apiPost('/reservas', reservation);
-      
-      if (response.ok) {
-        // Success
-        const data = await response.json();
-        showAlert(`Reserva creada correctamente (ID: ${data.id})`, 'success');
-        
-        // Reset form
-        fechaInicio.value = '';
-        fechaFin.value = '';
-      } else if (response.status === 409) {
-        // Conflict - dates not available
-        showAlert('Fechas no disponibles. Por favor, selecciona otras fechas.', 'error');
-      } else if (response.status === 401) {
-        // Unauthorized
-        showAlert('Debes iniciar sesión para reservar.', 'error');
-        setTimeout(() => {
-          window.location.href = `login.html?next=detail.html?id=${alojamientoId}`;
-        }, 2000);
-      } else {
-        // Other error
-        showAlert('Error al crear la reserva. Inténtalo de nuevo.', 'error');
-      }
-    } catch (error) {
-      console.error('Error creating reservation:', error);
-      showAlert('Error al crear la reserva. Inténtalo de nuevo.', 'error');
-    } finally {
-      // Re-enable form
-      reserveButton.disabled = false;
-      reserveButton.innerHTML = '<i class="fas fa-calendar-check"></i> Reservar ahora';
-    }
-  });
-}
+async function createReservation() {
+  if (!validateDates()) return;
 
-/**
- * Check if user is authenticated and update UI accordingly
- */
-async function checkAuthenticationStatus() {
-  if (!authRequired || !reservationForm) return;
-  
+  const propertyId = parseInt(new URLSearchParams(window.location.search).get('id'));
+  const fechaInicio = document.getElementById('fechaInicio').value;
+  const fechaFin = document.getElementById('fechaFin').value;
+  const bookBtn = document.getElementById('bookBtn');
+
+  // Disable button and show loading
+  bookBtn.disabled = true;
+  bookBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+
   try {
-    const isLoggedIn = await isAuthenticated();
-    
-    if (isLoggedIn) {
-      // User is logged in, show reservation form
-      authRequired.classList.add('hidden');
-      reservationForm.classList.remove('hidden');
+    const response = await apiPost('/reservas', {
+      id_alojamiento: propertyId,
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      showAlert(`Reserva creada correctamente (ID: ${data.id})`, 'success');
+      
+      // Reset form
+      document.getElementById('fechaInicio').value = '';
+      document.getElementById('fechaFin').value = '';
     } else {
-      // User is not logged in, show auth required message
-      authRequired.classList.remove('hidden');
-      reservationForm.classList.add('hidden');
+      const error = await response.json();
+      
+      if (response.status === 409) {
+        showAlert('Fechas no disponibles. Por favor, elige otras fechas.', 'error');
+      } else if (response.status === 401) {
+        showAlert('Debes iniciar sesión para reservar.', 'error');
+        window.location.href = 'login.html';
+      } else {
+        showAlert(error.error || 'Error al crear la reserva.', 'error');
+      }
     }
   } catch (error) {
-    console.error('Error checking authentication:', error);
-    
-    // Default to requiring authentication on error
-    authRequired.classList.remove('hidden');
-    reservationForm.classList.add('hidden');
+    console.error('Error:', error);
+    showAlert('Error al crear la reserva.', 'error');
+  } finally {
+    // Re-enable button
+    bookBtn.disabled = false;
+    bookBtn.textContent = 'Reservar ahora';
   }
+}
+
+/**
+ * Set active navigation item based on current page
+ */
+function setActiveNavItem() {
+  const navLinks = document.querySelectorAll('nav a');
+  
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === 'search.html') {
+      link.classList.add('active');
+    }
+  });
 }
