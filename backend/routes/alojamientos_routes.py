@@ -1,5 +1,5 @@
 #alojamientos_routes
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, current_app
 from extensions import db
 from models import Alojamiento
 from sqlalchemy import and_
