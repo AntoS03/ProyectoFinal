@@ -1,4 +1,4 @@
-#THIS IS FROM CHATGPT SO IT'S NOT FINAL
+#reservas_routes
 from flask import Blueprint, request, jsonify, session
 from extensions import db
 from models import Reserva, Alojamiento

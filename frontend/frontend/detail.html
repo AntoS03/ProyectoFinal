@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalles de Alojamiento - ProyectoFinal</title>
+  <link rel="stylesheet" href="static/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
+          <a href="index.html">
+            <i class="fas fa-home"></i> ProyectoFinal
+          </a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="search.html">Buscar</a></li>
+          <li id="authLinks">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="register.html">Registrarse</a>
+          </li>
+          <li id="profileLink" class="hidden">
+            <a href="profile.html">Mi Perfil</a>
+          </li>
+        </ul>
+        <div class="menu-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div id="alertContainer"></div>
+    
+    <section class="detail-section">
+      <div class="container">
+        <nav class="breadcrumb">
+          <a href="index.html">Inicio</a> &gt;
+          <a href="search.html">Buscar</a> &gt;
+          <span id="breadcrumbName">Alojamiento</span>
+        </nav>
+        
+        <div id="loadingIndicator" class="loading-container">
+          <div class="spinner"></div>
+          <p>Cargando detalles del alojamiento...</p>
+        </div>
+        
+        <div id="alojamientoNotFound" class="not-found hidden">
+          <i class="fas fa-exclamation-circle"></i>
+          <h2>Alojamiento no encontrado</h2>
+          <p>El alojamiento que buscas no existe o no está disponible.</p>
+          <a href="search.html" class="btn btn-primary">Volver a la búsqueda</a>
+        </div>
+        
+        <div id="alojamientoDetail" class="detail-container hidden">
+          <h1 id="nombreAlojamiento"></h1>
+          
+          <div class="detail-grid">
+            <div class="detail-image">
+              <img id="imagenAlojamiento" src="" alt="Imagen del alojamiento">
+            </div>
+            
+            <div class="detail-info">
+              <div class="info-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                  <h3>Ubicación</h3>
+                  <p id="direccionAlojamiento"></p>
+                  <p id="ciudadAlojamiento"></p>
+                  <p id="estadoAlojamiento"></p>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-euro-sign"></i>
+                <div>
+                  <h3>Precio</h3>
+                  <p id="precioAlojamiento" class="precio"></p>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-align-left"></i>
+                <div>
+                  <h3>Descripción</h3>
+                  <p id="descripcionAlojamiento"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="mapContainer" class="map-container hidden">
+            <h3>Ubicación en el mapa</h3>
+            <div id="mapFrame"></div>
+          </div>
+          
+          <div class="reservation-section">
+            <h2>Reservar este alojamiento</h2>
+            
+            <div id="authRequired" class="auth-required hidden">
+              <p>Para reservar debes <a href="login.html" class="btn btn-secondary">iniciar sesión</a></p>
+            </div>
+            
+            <form id="reservationForm" class="hidden">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="fechaInicio">Fecha de llegada</label>
+                  <input type="date" id="fechaInicio" class="form-control" required>
+                  <small>Elige la fecha de llegada</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="fechaFin">Fecha de salida</label>
+                  <input type="date" id="fechaFin" class="form-control" required>
+                  <small>Elige la fecha de salida</small>
+                </div>
+              </div>
+              
+              <div id="dateError" class="alert-error hidden">
+                La fecha de salida debe ser posterior a la fecha de llegada
+              </div>
+              
+              <div class="form-group">
+                <button type="submit" id="reserveButton" class="btn btn-primary">
+                  <i class="fas fa-calendar-check"></i> Reservar ahora
+                </button>
+                <button type="button" id="resetDates" class="btn btn-outline">
+                  Reiniciar fechas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 ProyectoFinal</p>
+    </div>
+  </footer>
+
+  <script src="static/js/fetch-api.js"></script>
+  <script src="static/js/common.js"></script>
+  <script src="static/js/detail.js"></script>
+</body>
+</html>

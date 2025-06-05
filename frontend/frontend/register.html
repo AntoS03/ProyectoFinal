@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrarse - ProyectoFinal</title>
+  <link rel="stylesheet" href="static/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
+          <a href="index.html">
+            <i class="fas fa-home"></i> ProyectoFinal
+          </a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="search.html">Buscar</a></li>
+          <li id="authLinks">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="register.html" class="active">Registrarse</a>
+          </li>
+          <li id="profileLink" class="hidden">
+            <a href="profile.html">Mi Perfil</a>
+          </li>
+        </ul>
+        <div class="menu-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div id="alertContainer"></div>
+    
+    <section class="auth-section">
+      <div class="container">
+        <div class="auth-form-container">
+          <h1>Crear una cuenta</h1>
+          
+          <form id="registerForm" class="auth-form">
+            <div class="form-group">
+              <label for="emailReg">Correo electrónico</label>
+              <input type="email" id="emailReg" class="form-control" placeholder="Correo electrónico" required>
+              <div id="emailError" class="input-error hidden">Ingresa un correo electrónico válido</div>
+            </div>
+            
+            <div class="form-group">
+              <label for="passwordReg">Contraseña</label>
+              <input type="password" id="passwordReg" class="form-control" placeholder="Contraseña (mín. 8 caracteres)" required>
+              <div id="passwordError" class="input-error hidden">La contraseña debe tener al menos 8 caracteres</div>
+            </div>
+            
+            <div class="form-group">
+              <label for="confirmPassword">Confirmar Contraseña</label>
+              <input type="password" id="confirmPassword" class="form-control" placeholder="Confirmar Contraseña" required>
+              <div id="confirmError" class="input-error hidden">Las contraseñas no coinciden</div>
+            </div>
+            
+            <div class="form-group">
+              <label for="nombreReg">Nombre (opcional)</label>
+              <input type="text" id="nombreReg" class="form-control" placeholder="Nombre">
+            </div>
+            
+            <div class="form-group">
+              <label for="apellidosReg">Apellidos (opcional)</label>
+              <input type="text" id="apellidosReg" class="form-control" placeholder="Apellidos">
+            </div>
+            
+            <div id="registerError" class="alert-error hidden"></div>
+            
+            <div class="form-group">
+              <button type="submit" id="registerBtn" class="btn btn-primary btn-block">
+                <span id="registerBtnText">Registrarse</span>
+                <span id="registerSpinner" class="spinner hidden"></span>
+              </button>
+            </div>
+            
+            <p class="auth-link">
+              ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 ProyectoFinal</p>
+    </div>
+  </footer>
+
+  <script src="static/js/fetch-api.js"></script>
+  <script src="static/js/common.js"></script>
+  <script src="static/js/auth.js"></script>
+</body>
+</html>

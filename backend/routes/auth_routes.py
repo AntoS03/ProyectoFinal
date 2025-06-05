@@ -1,4 +1,4 @@
-#THIS IS FROM CHATGPT SO IT'S NOT FINAL
+#auth_routes
 from flask import Blueprint, request, jsonify, session
 from passlib.hash import bcrypt
 from extensions import db

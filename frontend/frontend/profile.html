@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - ProyectoFinal</title>
+  <link rel="stylesheet" href="static/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
+          <a href="index.html">
+            <i class="fas fa-home"></i> ProyectoFinal
+          </a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="search.html">Buscar</a></li>
+          <li id="authLinks" class="hidden">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="register.html">Registrarse</a>
+          </li>
+          <li id="profileLink">
+            <a href="profile.html" class="active">Mi Perfil</a>
+          </li>
+        </ul>
+        <div class="menu-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div id="alertContainer"></div>
+    
+    <section class="profile-section">
+      <div class="container">
+        <h1>Mi Perfil</h1>
+        
+        <div id="loadingIndicator" class="loading-container">
+          <div class="spinner"></div>
+          <p>Cargando tu información...</p>
+        </div>
+        
+        <div id="profileContent" class="profile-content hidden">
+          <div class="profile-tabs">
+            <button id="reservasTab" class="tab-btn active">Mis Reservas</button>
+            <button id="accountTab" class="tab-btn">Mi Cuenta</button>
+          </div>
+          
+          <div id="reservasContent" class="tab-content">
+            <div id="noReservas" class="no-results hidden">
+              <i class="fas fa-calendar-times"></i>
+              <p>No tienes reservas activas.</p>
+              <a href="search.html" class="btn btn-primary">Buscar Alojamientos</a>
+            </div>
+            
+            <div id="reservasTable" class="table-container hidden">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Alojamiento</th>
+                    <th>Fecha de Llegada</th>
+                    <th>Fecha de Salida</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="reservasTableBody">
+                  <!-- Reservations will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div id="accountContent" class="tab-content hidden">
+            <div class="user-info">
+              <div class="user-avatar">
+                <i class="fas fa-user-circle"></i>
+              </div>
+              <div class="user-details">
+                <h3 id="userEmail">Correo electrónico</h3>
+                <p id="userName">Nombre y apellidos</p>
+              </div>
+            </div>
+            
+            <button id="logoutBtn" class="btn btn-danger">
+              <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 ProyectoFinal</p>
+    </div>
+  </footer>
+
+  <!-- Modal for confirmation -->
+  <div id="confirmModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Confirmar acción</h3>
+        <span class="close-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p id="modalMessage">¿Estás seguro de que deseas realizar esta acción?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="modalCancel" class="btn btn-outline">Cancelar</button>
+        <button id="modalConfirm" class="btn btn-danger">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="static/js/fetch-api.js"></script>
+  <script src="static/js/common.js"></script>
+  <script src="static/js/profile.js"></script>
+</body>
+</html>
