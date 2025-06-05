@@ -357,6 +357,21 @@ footer {
 }
 
 /* Forms */
+
+.profile-form .form-group {
+    margin-bottom: 1.2rem;
+}
+
+.profile-form .form-control {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+/* Bottone reset immagine */
+#resetImageBtn {
+    margin-top: 10px;
+}
+
 .form-group {
   margin-bottom: calc(var(--spacing) * 2);
 }

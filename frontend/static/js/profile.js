@@ -92,6 +92,89 @@ function resetAlojForm() {
     document.getElementById('alojModalTitle').textContent = 'Crear nuevo Alojamiento';
 }
 
+async function loadUserProfile() {
+    try {
+        const response = await apiGet('/auth/me');
+        if (!response.ok) throw new Error('Failed to load profile');
+        
+        const user = await response.json();
+        
+        // Popola i campi del form
+        document.getElementById('editUserName').value = user.nombre || '';
+        document.getElementById('editUserSurname').value = user.apellidos || '';
+        document.getElementById('userEmail').textContent = user.email || '—';
+        
+        const imgEl = document.getElementById('userImage');
+        if (user.imagen_perfil_ruta) {
+            imgEl.src = user.imagen_perfil_ruta;
+        }
+    } catch (err) {
+        console.error('Error loadUserProfile:', err);
+        showAlert('Error al cargar datos del perfil', 'error');
+    }
+}
+
+// Gestione reset immagine
+document.getElementById('resetImageBtn').addEventListener('click', async () => {
+    if (!confirm('¿Restablecer imagen de perfil a la predeterminada?')) return;
+    
+    try {
+        const response = await apiPost('/auth/reset-profile-image');
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('userImage').src = data.default_image;
+            showAlert('Imagen restablecida correctamente', 'success');
+        } else {
+            const error = await response.json();
+            showAlert(error.error || 'Error al restablecer imagen', 'error');
+        }
+    } catch (error) {
+        console.error('Reset image error:', error);
+        showAlert('Error de red al restablecer imagen', 'error');
+    }
+});
+
+// Gestione aggiornamento profilo
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const submitBtn = document.querySelector('#profileForm button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando...';
+    
+    const nombre = document.getElementById('editUserName').value.trim();
+    const apellidos = document.getElementById('editUserSurname').value.trim();
+    
+    try {
+        const response = await apiPut('/auth/update-profile', {
+            nombre,
+            apellidos
+        });
+        
+        if (response.ok) {
+            showAlert('Perfil actualizado correctamente', 'success');
+            // Ricarica i dati per visualizzare eventuali modifiche
+            await loadUserProfile();
+        } else {
+            const error = await response.json();
+            showAlert(error.error || 'Error al actualizar perfil', 'error');
+        }
+    } catch (error) {
+        console.error('Update profile error:', error);
+        showAlert('Error de red al actualizar perfil', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Guardar cambios';
+    }
+});
+
+// Bottone annulla
+document.getElementById('cancelEditBtn').addEventListener('click', async () => {
+    // Ricarica i dati originali
+    await loadUserProfile();
+    showAlert('Cambios cancelados', 'info');
+});
+
 async function loadOwnerAlojamientos() {
     const container = document.getElementById('ownerAlojamientos');
     if (!container) return;

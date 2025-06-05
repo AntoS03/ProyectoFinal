@@ -1,257 +1,272 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - BookingApp</title>
-    <link rel="stylesheet" href="static/css/main.css">
-    <style>
-        .tab-container {
-            margin-bottom: 2rem;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - BookingApp</title>
+  <link rel="stylesheet" href="static/css/main.css">
+  <style>
+    .tab-container {
+      margin-bottom: 2rem;
+    }
 
-        .tab-links {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 1rem;
-        }
+    .tab-links {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 1rem;
+    }
 
-        .tab-link {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--color-text-light);
-            border-bottom: 3px solid transparent;
-            transition: var(--transition);
-        }
+    .tab-link {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--color-text-light);
+      border-bottom: 3px solid transparent;
+      transition: var(--transition);
+    }
 
-        .tab-link:hover {
-            color: var(--color-primary);
-        }
+    .tab-link:hover {
+      color: var(--color-primary);
+    }
 
-        .tab-link.active {
-            color: var(--color-primary);
-            border-bottom-color: var(--color-primary);
-        }
+    .tab-link.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
 
-        .tab-content {
-            display: none;
-        }
+    .tab-content {
+      display: none;
+    }
 
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
 
-        .account-info {
-            background-color: white;
-            border-radius: var(--border-radius);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-        }
+    .account-info {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
 
-        .account-info p {
-            margin-bottom: 0.75rem;
-        }
+    .account-info p {
+      margin-bottom: 0.75rem;
+    }
 
-        .account-label {
-            font-weight: 600;
-            color: var(--color-primary);
-            margin-right: 0.5rem;
-        }
+    .account-label {
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-right: 0.5rem;
+    }
 
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
 
-        .action-btn {
-            padding: 6px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.85rem;
-            transition: var(--transition);
-        }
+    .action-btn {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      transition: var(--transition);
+    }
 
-        .edit-btn {
-            background-color: var(--color-primary-light);
-            color: white;
-        }
+    .edit-btn {
+      background-color: var(--color-primary-light);
+      color: white;
+    }
 
-        .delete-btn {
-            background-color: var(--color-error);
-            color: white;
-        }
+    .delete-btn {
+      background-color: var(--color-error);
+      color: white;
+    }
 
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
 
-        .action-btn svg {
-            width: 14px;
-            height: 14px;
-        }
-    </style>
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+  </style>
 </head>
+
 <body>
-    <header>
-        <div class="container header-container">
-            <a href="index.html" class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-                Best Booking
-            </a>
+  <header>
+    <div class="container header-container">
+      <a href="index.html" class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        Best Booking
+      </a>
 
-            <button id="mobileMenuBtn" class="mobile-menu-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            </button>
+      <button id="mobileMenuBtn" class="mobile-menu-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
 
-            <nav id="navMenu" class="nav-menu">
-                <ul>
-                    <li><a href="index.html">Inicio</a></li>
-                    <li><a href="search.html">Buscar</a></li>
-                    <li id="authLinks">
-                        <!--a href="profile.html">Mi Perfil</a-->
-                    </li>
-                </ul>
-            </nav>
+      <nav id="navMenu" class="nav-menu">
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="search.html">Buscar</a></li>
+          <li id="authLinks">
+            <!--a href="profile.html">Mi Perfil</a-->
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <div id="alertContainer"></div>
+
+  <main>
+    <div class="container">
+      <h1>Mi Perfil</h1>
+
+      <div class="tab-container">
+        <div class="tab-links">
+          <a href="#reservasTab" class="tab-link active">Mis Reservas</a>
+          <a href="#accountTab" class="tab-link">Mi Cuenta</a>
+          <a href="#misAlojamientosTab" class="tab-link">Mis Alojamientos</a>
         </div>
-    </header>
 
-    <div id="alertContainer"></div>
+        <div id="reservasTab" class="tab-content active">
+          <h2>Mis Reservas</h2>
+          <div id="userReservations">
+            <p class="text-center">Cargando tus reservas...</p>
+          </div>
+        </div>
 
-    <main>
-        <div class="container">
-            <h1>Mi Perfil</h1>
-
-            <div class="tab-container">
-                <div class="tab-links">
-                    <a href="#reservasTab" class="tab-link active">Mis Reservas</a>
-                    <a href="#accountTab" class="tab-link">Mi Cuenta</a>
-                    <a href="#misAlojamientosTab" class="tab-link">Mis Alojamientos</a>
-                </div>
-
-                <div id="reservasTab" class="tab-content active">
-                    <h2>Mis Reservas</h2>
-                    <div id="userReservations">
-                        <p class="text-center">Cargando tus reservas...</p>
-                    </div>
-                </div>
-
-                <div id="accountTab" class="tab-content">
-                    <h2>Mi Cuenta</h2>
-                    <div class="account-info">
-                        <div style="text-align:center; margin-bottom:1rem;">
-                            <img id="userImage" src="static/uploads/user_profiles/default.png" alt="Imagen de perfil"
-                                style="width:120px; height:120px; object-fit:cover; border-radius:50%; border:2px solid var(--color-primary);" />
-                        </div>
-
-                        <form id="uploadImageForm" style="text-align:center; margin-bottom:1rem;">
-                            <input type="file" id="imageInput" accept="image/*" />
-                            <button type="submit" class="btn btn-outline">Cambiar foto</button>
-                        </form>
-
-                        <p>
-                            <span class="account-label">Nombre:</span>
-                            <span id="userName">—</span>
-                        </p>
-
-                        <p>
-                            <span class="account-label">Apellidos:</span>
-                            <span id="userSurname">—</span>
-                        </p>
-
-                        <p>
-                            <span class="account-label">Email:</span>
-                            <span id="userEmail">—</span>
-                        </p>
-
-                        <button id="logoutBtn" class="btn btn-primary">Cerrar sesión</button>
-                    </div>
-                </div>
-
-                <div id="misAlojamientosTab" class="tab-content">
-                    <h2>Mis Alojamientos</h2>
-
-                    <button id="btnAddAloj" class="btn btn-primary" style="margin-bottom:1rem;">
-                        Añadir Alojamiento
-                    </button>
-
-                    <div id="ownerAlojamientos">
-                        <p class="text-center">Cargando tus alojamientos...</p>
-                    </div>
-
-                    <div id="formAddAlojModal" style="display:none; margin-top:2rem;">
-                        <div class="auth-container" style="max-width:700px;">
-                            <h3 id="alojModalTitle">Crear nuevo Alojamiento</h3>
-                            <input type="hidden" id="editAlojId" value="">
-                            <form id="createAlojForm" enctype="multipart/form-data">
-                                <div class="form-group">
-                                    <label for="nombreAloj" class="form-label">Nombre *</label>
-                                    <input type="text" id="nombreAloj" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="direccionAloj" class="form-label">Dirección *</label>
-                                    <input type="text" id="direccionAloj" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="ciudadAloj" class="form-label">Ciudad *</label>
-                                    <input type="text" id="ciudadAloj" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="estadoAloj" class="form-label">Estado o País *</label>
-                                    <input type="text" id="estadoAloj" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="descripcionAloj" class="form-label">Descripción *</label>
-                                    <textarea id="descripcionAloj" class="form-control" rows="3" required></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label for="precioAloj" class="form-label">Precio por noche (€) *</label>
-                                    <input type="number" id="precioAloj" class="form-control" min="0" step="0.01" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="linkMapAloj" class="form-label">Link a mapa (opcional)</label>
-                                    <input type="url" id="linkMapAloj" class="form-control">
-                                </div>
-                                <div class="form-group">
-                                    <label for="imageAlojInput" class="form-label">Imagen principal *</label>
-                                    <input type="file" id="imageAlojInput" name="image" accept="image/*" class="form-control">
-                                </div>
-                                <button type="submit" class="btn btn-primary">Guardar</button>
-                                <button type="button" id="cancelAddAloj" class="btn btn-secondary" style="margin-left:8px;">Cancelar</button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <h3 style="margin-top:2rem;">Richieste di Prenotazione Pendiente</h3>
-                    <div id="ownerReservaRequests">
-                        <p class="text-center">Cargando solicitudes...</p>
-                    </div>
-                </div>
+        <div id="accountTab" class="tab-content">
+          <h2>Mi Cuenta</h2>
+          <div class="account-info">
+            <div style="text-align:center; margin-bottom:1rem;">
+              <img id="userImage" src="static/uploads/user_profiles/default.png" alt="Imagen de perfil"
+                style="width:120px; height:120px; object-fit:cover; border-radius:50%; border:2px solid var(--color-primary);" />
             </div>
-        </div>
-    </main>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 Best Booking</p>
-        </div>
-    </footer>
+            <div style="text-align:center; margin-bottom:1rem;">
+              <form id="uploadImageForm" style="display:inline-block; margin-right:10px;">
+                <input type="file" id="imageInput" accept="image/*" />
+                <button type="submit" class="btn btn-outline">Cambiar foto</button>
+              </form>
+              <button id="resetImageBtn" class="btn btn-outline-secondary">Usar imagen predeterminada</button>
+            </div>
 
-    <script src="static/js/fetch-api.js"></script>
-    <script src="static/js/profile.js"></script>
+            <form id="profileForm">
+              <div class="form-group">
+                <label for="editUserName" class="form-label">Nombre</label>
+                <input type="text" id="editUserName" class="form-control" placeholder="Nombre">
+              </div>
+
+              <div class="form-group">
+                <label for="editUserSurname" class="form-label">Apellidos</label>
+                <input type="text" id="editUserSurname" class="form-control" placeholder="Apellidos">
+              </div>
+
+              <p>
+                <span class="account-label">Email:</span>
+                <span id="userEmail">—</span>
+              </p>
+
+              <div class="form-group" style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                <button type="button" id="cancelEditBtn" class="btn btn-secondary"
+                  style="margin-left:8px;">Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="misAlojamientosTab" class="tab-content">
+          <h2>Mis Alojamientos</h2>
+
+          <button id="btnAddAloj" class="btn btn-primary" style="margin-bottom:1rem;">
+            Añadir Alojamiento
+          </button>
+
+          <div id="ownerAlojamientos">
+            <p class="text-center">Cargando tus alojamientos...</p>
+          </div>
+
+          <div id="formAddAlojModal" style="display:none; margin-top:2rem;">
+            <div class="auth-container" style="max-width:700px;">
+              <h3 id="alojModalTitle">Crear nuevo Alojamiento</h3>
+              <input type="hidden" id="editAlojId" value="">
+              <form id="createAlojForm" enctype="multipart/form-data">
+                <div class="form-group">
+                  <label for="nombreAloj" class="form-label">Nombre *</label>
+                  <input type="text" id="nombreAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="direccionAloj" class="form-label">Dirección *</label>
+                  <input type="text" id="direccionAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="ciudadAloj" class="form-label">Ciudad *</label>
+                  <input type="text" id="ciudadAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="estadoAloj" class="form-label">Estado o País *</label>
+                  <input type="text" id="estadoAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="descripcionAloj" class="form-label">Descripción *</label>
+                  <textarea id="descripcionAloj" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="precioAloj" class="form-label">Precio por noche (€) *</label>
+                  <input type="number" id="precioAloj" class="form-control" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                  <label for="linkMapAloj" class="form-label">Link a mapa (opcional)</label>
+                  <input type="url" id="linkMapAloj" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="imageAlojInput" class="form-label">Imagen principal *</label>
+                  <input type="file" id="imageAlojInput" name="image" accept="image/*" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="button" id="cancelAddAloj" class="btn btn-secondary"
+                  style="margin-left:8px;">Cancelar</button>
+              </form>
+            </div>
+          </div>
+
+          <h3 style="margin-top:2rem;">Richieste di Prenotazione Pendiente</h3>
+          <div id="ownerReservaRequests">
+            <p class="text-center">Cargando solicitudes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Best Booking</p>
+    </div>
+  </footer>
+
+  <script src="static/js/fetch-api.js"></script>
+  <script src="static/js/profile.js"></script>
 </body>
+
 </html>
