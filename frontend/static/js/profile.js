@@ -173,7 +173,7 @@ function setupReservationActions() {
       
       if (confirm('¿Seguro que deseas cancelar esta reserva?')) {
         try {
-          const response = await apiDelete(`/reservas/${reservationId}/`);
+          const response = await apiDelete(`/reservas/${reservationId}`);
           
           if (response.ok) {
             showAlert('Reserva cancelada correctamente.', 'success');
