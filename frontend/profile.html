@@ -101,14 +101,39 @@
             <p class="text-center">Cargando tus reservas...</p>
           </div>
         </div>
-        
         <div id="accountTab" class="tab-content">
           <h2>Mi Cuenta</h2>
-          <div class="account-info">
-            <p><span class="account-label">Email:</span> <span id="userEmail">Usuario autenticado</span></p>
-            
-            <button id="logoutBtn" class="btn btn-primary">Cerrar sesión</button>
+          <div class="account-details-grid"> <!-- Usiamo una griglia per layout migliore -->
+            <div class="profile-image-section">
+              <img id="userProfileImage" src="static/img/default-avatar.png" alt="Foto de Perfil" class="profile-avatar">
+              <!-- Potresti aggiungere un input type="file" qui per cambiare l'immagine, gestito da JS -->
+              <!-- <input type="file" id="profileImageUpload" accept="image/*" style="display: none;"> -->
+              <!-- <button id="changeProfileImageBtn" class="btn btn-sm btn-outline">Cambiar Foto</button> -->
+            </div>
+            <div class="profile-info-section">
+              <div class="account-info-item">
+                <span class="account-label">Nombre:</span>
+                <span id="userNombre">Cargando...</span>
+              </div>
+              <div class="account-info-item">
+                <span class="account-label">Apellido:</span>
+                <span id="userApellido">Cargando...</span>
+              </div>
+              <div class="account-info-item">
+                <span class="account-label">Email:</span>
+                <span id="userEmail">Cargando...</span>
+              </div>
+              <div class="account-info-item">
+                <span class="account-label">Contraseña:</span>
+                <span>******** (<a href="#" id="changePasswordLink">Cambiar contraseña</a>)</span>
+              </div>
+              
+              <!-- <button id="editProfileBtn" class="btn btn-secondary">Editar Perfil</button> -->
+              <button id="logoutBtn" class="btn btn-primary btn-logout">Cerrar sesión</button>
+            </div>
           </div>
+          <!-- Qui potresti aggiungere form modali per editare il profilo o cambiare password -->
+        </div>
         </div>
       </div>
     </div>

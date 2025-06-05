@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load user reservations
   loadUserReservations();
+  loadUserProfile(); // NUOVA CHIAMATA QUI
+
 
   // Setup logout button
   const logoutBtn = document.getElementById('logoutBtn');
@@ -249,4 +251,49 @@ function setActiveNavItem() {
       link.classList.add('active');
     }
   });
+}
+/**
+ * Load user profile data
+ */
+async function loadUserProfile() {
+  try {
+    const response = await apiGet('/user/profile'); // Chiama il nuovo endpoint
+    
+    if (response.ok) {
+      const userData = await response.json();
+      document.getElementById('userNombre').textContent = userData.nombre || 'No especificado';
+      document.getElementById('userApellido').textContent = userData.apellido || 'No especificado';
+      document.getElementById('userEmail').textContent = userData.email;
+      
+      const profileImage = document.getElementById('userProfileImage');
+      if (userData.profile_image_url) {
+        // Costruisci l'URL completo se profile_image_url è relativo
+        // Se è già un URL completo, puoi usarlo direttamente.
+        // Se profile_image_url è tipo "user_uploads/immagine.jpg" e il backend serve
+        // questi file da un percorso base, dovrai aggiustare l'URL.
+        // Per ora, assumiamo che sia un URL accessibile o un percorso relativo 
+        // dalla root del sito se il backend serve staticamente le immagini profilo.
+        // Se API_BASE è https://dominio.com/api e le immagini sono https://dominio.com/static/uploads/...
+        // allora devi costruire l'URL correttamente.
+        // Semplificazione: se l'URL inizia con http o /, usalo. Altrimenti, anteponi /
+        let imageUrl = userData.profile_image_url;
+        if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+            // Esempio: se le immagini sono in /static/uploads/
+            // Questo dipende da come servi le immagini profilo dal backend
+            // imageUrl = `/static/uploads/${imageUrl}`; // O qualsiasi sia il tuo percorso base
+        }
+        profileImage.src = imageUrl || 'static/img/default-avatar.png'; 
+      } else {
+        profileImage.src = 'static/img/default-avatar.png'; // Immagine di default
+      }
+
+    } else {
+      console.error('Error al cargar datos del perfil:', response.status);
+      showAlert('No se pudieron cargar los datos del perfil.', 'error');
+      // Potresti voler reindirizzare al login se è un 401 qui anche
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    showAlert('Error de red al cargar datos del perfil.', 'error');
+  }
 }
