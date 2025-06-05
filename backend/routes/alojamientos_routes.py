@@ -118,7 +118,6 @@ def create_alojamiento():
 # Edit property (only from owner)
 @alojamientos_bp.route('/<int:id>', methods=['PUT'])
 @login_required
-#@propietario_required
 def edit_alojamiento(id):
     """
     Endpoint: PUT /alojamientos/<id>
@@ -126,27 +125,28 @@ def edit_alojamiento(id):
     """
     user_id = session['user_id']
     a = Alojamiento.query.get(id)
+    
     if not a:
         return jsonify({'error': 'Alojamiento no encontrado'}), 404
-    
-    # Controllo permesso: solo il proprietario
+
     if a.id_propietario != user_id:
         return jsonify({'msg': 'No autorizado'}), 403
-    
+
     data = request.get_json()
-    
+
     # Aggiorno campi ammessi
-    for field in ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche', 'imagen_principal_ruta', 'link_map']:
+    for field in ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 
+                 'descripcion', 'precio_noche', 'imagen_principal_ruta', 
+                 'link_map']:
         if field in data:
             setattr(a, field, data[field])
-    
+
     db.session.commit()
     return jsonify({'message': 'Alojamiento actualizado'}), 200
 
 # Delete property
 @alojamientos_bp.route('/<int:id>', methods=['DELETE'])
 @login_required
-#@propietario_required
 def delete_alojamiento(id):
     """
     Endpoint: DELETE /alojamientos/<id>
@@ -154,13 +154,13 @@ def delete_alojamiento(id):
     """
     user_id = session['user_id']
     a = Alojamiento.query.get(id)
+    
     if not a:
         return jsonify({'error': 'Alojamiento no encontrado'}), 404
-    
-    # Controllo permesso: solo il proprietario
+
     if a.id_propietario != user_id:
         return jsonify({'error': 'No autorizado'}), 403
-    
+
     db.session.delete(a)
     db.session.commit()
     return jsonify({'message': 'Alojamiento eliminado'}), 200
