@@ -1,4 +1,5 @@
 #alojamientos_routes
+import os
 from flask import Blueprint, request, jsonify, session, current_app
 from extensions import db
 from models import Alojamiento
