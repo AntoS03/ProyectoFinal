@@ -17,5 +17,5 @@ class Config:
     # Configurazione sicura del cookie di sessione
     SESSION_COOKIE_HTTPONLY = True     # 🔒 impedisce accesso da JavaScript
     SESSION_COOKIE_SECURE = False       # 🔐 solo su HTTPS
-    SESSION_COOKIE_SAMESITE = 'Lax'    # 🛡️ limita invio in contesti cross-site
+#    SESSION_COOKIE_SAMESITE = 'Lax'    # 🛡️ limita invio in contesti cross-site
     PERMANENT_SESSION_LIFETIME = 3600  # (esempio) scade dopo 1 ora

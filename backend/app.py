@@ -28,7 +28,7 @@ def create_app():
     # Abilita CORS con restrizione di origine e supporto alle credenziali
     CORS(
         app,
-        resources={r"/*": {"origins": "https://master-proyectofinal.francecentral.cloudapp.azure.com"}},
+#        resources={r"/*": {"origins": "http://localhost:5000"}},
         supports_credentials=True
     )
     
