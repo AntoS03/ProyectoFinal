@@ -257,7 +257,7 @@ function setActiveNavItem() {
  */
 async function loadUserProfile() {
   try {
-    const response = await apiGet('/user/profile'); // Chiama il nuovo endpoint
+    const response = await apiGet('/auth'); // Chiama il nuovo endpoint
     
     if (response.ok) {
       const userData = await response.json();
