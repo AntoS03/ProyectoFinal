@@ -5,88 +5,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registrarse - BookingApp</title>
   <link rel="stylesheet" href="static/css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <header>
-    <div class="container">
-      <nav>
-        <div class="logo">
-          <a href="index.html">
-            <i class="fas fa-home"></i> BookingApp
-          </a>
-        </div>
-        <ul class="nav-links">
+    <div class="container header-container">
+      <a href="index.html" class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        ProyectoFinal
+      </a>
+      
+      <button id="mobileMenuBtn" class="mobile-menu-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      
+      <nav id="navMenu" class="nav-menu">
+        <ul>
           <li><a href="index.html">Inicio</a></li>
           <li><a href="search.html">Buscar</a></li>
           <li id="authLinks">
             <a href="login.html">Iniciar Sesión</a>
-            <a href="register.html" class="active">Registrarse</a>
-          </li>
-          <li id="profileLink" class="hidden">
-            <a href="profile.html">Mi Perfil</a>
+            <a href="register.html">Registrarse</a>
           </li>
         </ul>
-        <div class="menu-toggle">
-          <i class="fas fa-bars"></i>
-        </div>
       </nav>
     </div>
   </header>
 
+  <div id="alertContainer"></div>
+
   <main>
-    <div id="alertContainer"></div>
-    
-    <section class="auth-section">
-      <div class="container">
-        <div class="auth-form-container">
-          <h1>Crear una cuenta</h1>
+    <div class="container">
+      <div class="auth-container">
+        <h2 class="auth-title">Registrarse</h2>
+        
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="emailReg" class="form-label">Correo electrónico</label>
+            <input type="email" id="emailReg" class="form-control" placeholder="Correo electrónico" required>
+            <div id="emailRegError" class="invalid-feedback"></div>
+          </div>
           
-          <form id="registerForm" class="auth-form">
-            <div class="form-group">
-              <label for="emailReg">Correo electrónico</label>
-              <input type="email" id="emailReg" class="form-control" placeholder="Correo electrónico" required>
-              <div id="emailError" class="input-error hidden">Ingresa un correo electrónico válido</div>
-            </div>
-            
-            <div class="form-group">
-              <label for="passwordReg">Contraseña</label>
-              <input type="password" id="passwordReg" class="form-control" placeholder="Contraseña (mín. 8 caracteres)" required>
-              <div id="passwordError" class="input-error hidden">La contraseña debe tener al menos 8 caracteres</div>
-            </div>
-            
-            <div class="form-group">
-              <label for="confirmPassword">Confirmar Contraseña</label>
-              <input type="password" id="confirmPassword" class="form-control" placeholder="Confirmar Contraseña" required>
-              <div id="confirmError" class="input-error hidden">Las contraseñas no coinciden</div>
-            </div>
-            
-            <div class="form-group">
-              <label for="nombreReg">Nombre (opcional)</label>
-              <input type="text" id="nombreReg" class="form-control" placeholder="Nombre">
-            </div>
-            
-            <div class="form-group">
-              <label for="apellidosReg">Apellidos (opcional)</label>
-              <input type="text" id="apellidosReg" class="form-control" placeholder="Apellidos">
-            </div>
-            
-            <div id="registerError" class="alert-error hidden"></div>
-            
-            <div class="form-group">
-              <button type="submit" id="registerBtn" class="btn btn-primary btn-block">
-                <span id="registerBtnText">Registrarse</span>
-                <span id="registerSpinner" class="spinner hidden"></span>
-              </button>
-            </div>
-            
-            <p class="auth-link">
-              ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
-            </p>
-          </form>
+          <div class="form-group">
+            <label for="passwordReg" class="form-label">Contraseña</label>
+            <input type="password" id="passwordReg" class="form-control" placeholder="Contraseña (mín. 8 caracteres)" required>
+            <div id="passwordRegError" class="invalid-feedback"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
+            <input type="password" id="confirmPassword" class="form-control" placeholder="Confirmar Contraseña" required>
+            <div id="confirmPasswordError" class="invalid-feedback"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="nombreReg" class="form-label">Nombre</label>
+            <input type="text" id="nombreReg" class="form-control" placeholder="Nombre (opcional)">
+          </div>
+          
+          <div class="form-group">
+            <label for="apellidosReg" class="form-label">Apellidos</label>
+            <input type="text" id="apellidosReg" class="form-control" placeholder="Apellidos (opcional)">
+          </div>
+          
+          <button type="submit" id="registerBtn" class="btn btn-primary btn-block">Registrarse</button>
+        </form>
+        
+        <div class="auth-footer">
+          <p>¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a></p>
         </div>
       </div>
-    </section>
+    </div>
   </main>
 
   <footer>
@@ -96,7 +91,6 @@
   </footer>
 
   <script src="static/js/fetch-api.js"></script>
-  <script src="static/js/common.js"></script>
   <script src="static/js/auth.js"></script>
 </body>
 </html>

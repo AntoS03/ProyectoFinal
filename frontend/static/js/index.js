@@ -1,119 +1,115 @@
 /**
- * Index page functionality
+ * Index page script
+ * Handles landing page functionality
  */
 
-// DOM Elements
-const featuredContainer = document.getElementById('featuredAlojamientos');
-
-/**
- * Initialize index page
- */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Fetch featured alojamientos for the homepage
-  await loadFeaturedAlojamientos();
+  // Check authentication and update navigation
+  await updateNavigation();
+
+  // Load featured properties
+  loadFeaturedProperties();
+
+  // Setup mobile menu toggle
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const navMenu = document.getElementById('navMenu');
+  
+  if (menuBtn && navMenu) {
+    menuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  }
+
+  // Set active navigation item
+  setActiveNavItem();
 });
 
 /**
- * Load featured alojamientos
+ * Load featured properties
  */
-async function loadFeaturedAlojamientos() {
+async function loadFeaturedProperties() {
+  const featuredContainer = document.getElementById('featuredProperties');
   if (!featuredContainer) return;
-  
+
+  showSpinner('featuredProperties', true);
+
   try {
-    // Fetch a few alojamientos to feature
-    const response = await apiGet('/alojamientos?precioMax=1000');
+    // Get first 3 properties, regardless of price
+    const response = await apiGet('/alojamientos');
     
     if (response.ok) {
-      const alojamientos = await response.json();
+      const data = await response.json();
+      const featured = data.slice(0, 3); // Get first 3 properties
       
-      // Clear skeletons
-      featuredContainer.innerHTML = '';
-      
-      // If no alojamientos were found
-      if (alojamientos.length === 0) {
-        featuredContainer.innerHTML = `
-          <div class="no-results">
-            <i class="fas fa-home"></i>
-            <p>No hay alojamientos disponibles en este momento.</p>
-          </div>
-        `;
+      if (featured.length === 0) {
+        featuredContainer.innerHTML = '<p class="text-center">No hay alojamientos destacados disponibles.</p>';
         return;
       }
       
-      // Display up to 3 featured alojamientos
-      const featuredItems = alojamientos.slice(0, 3);
-      
-      featuredItems.forEach(alojamiento => {
-        const card = createAlojamientoCard(alojamiento);
-        featuredContainer.appendChild(card);
-      });
+      renderFeaturedProperties(featured);
     } else {
-      // Handle error
-      console.error('Error fetching alojamientos:', response.status);
-      featuredContainer.innerHTML = `
-        <div class="no-results">
-          <i class="fas fa-exclamation-circle"></i>
-          <p>Error al cargar alojamientos. Inténtalo de nuevo más tarde.</p>
-        </div>
-      `;
+      console.error('Error loading featured properties:', await response.text());
+      featuredContainer.innerHTML = '<p class="text-center">Error al cargar alojamientos destacados.</p>';
     }
   } catch (error) {
-    console.error('Error in loadFeaturedAlojamientos:', error);
-    featuredContainer.innerHTML = `
-      <div class="no-results">
-        <i class="fas fa-exclamation-circle"></i>
-        <p>Error al cargar alojamientos. Inténtalo de nuevo más tarde.</p>
-      </div>
-    `;
+    console.error('Error:', error);
+    featuredContainer.innerHTML = '<p class="text-center">Error al cargar alojamientos destacados.</p>';
+  } finally {
+    hideSpinner('featuredProperties');
   }
 }
 
 /**
- * Create an alojamiento card element
- * @param {object} alojamiento - Alojamiento data
- * @returns {HTMLElement} - Card element
+ * Render featured properties
+ * @param {Array} properties - Array of property objects
  */
-function createAlojamientoCard(alojamiento) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  
-  // Use placeholder image if no image is available
-  const imageSrc = alojamiento.imagen_principal_ruta || 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
-  
-  card.innerHTML = `
-    <div class="card-img">
-      <img src="${imageSrc}" alt="Imagen de ${alojamiento.nombre}" loading="lazy">
+function renderFeaturedProperties(properties) {
+  const container = document.getElementById('featuredProperties');
+  if (!container) return;
+
+  const propertiesHTML = properties.map(property => `
+    <div class="col col-md-4">
+      <div class="card">
+        <div class="card-img">
+          <img src="${property.imagen_principal_ruta || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg'}" 
+               alt="Imagen de ${property.nombre}" />
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">${property.nombre}</h3>
+          <div class="card-location">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            ${property.ciudad}
+          </div>
+          <div class="card-price">${formatPrice(property.precio_noche)} / noche</div>
+          <div class="card-footer">
+            <a href="detail.html?id=${property.id}" class="btn btn-block">Ver detalles</a>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <h3 class="card-title">${alojamiento.nombre}</h3>
-      <p class="card-location">
-        <i class="fas fa-map-marker-alt"></i> ${alojamiento.ciudad}
-      </p>
-      <p class="card-price">${formatPrice(alojamiento.precio_noche)} / noche</p>
-      <p class="card-description">${truncateDescription(alojamiento.descripcion, 100)}</p>
-    </div>
-    <div class="card-footer">
-      <a href="detail.html?id=${alojamiento.id}" class="btn btn-primary btn-block">
-        Ver detalles
-      </a>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="row">
+      ${propertiesHTML}
     </div>
   `;
-  
-  return card;
 }
 
 /**
- * Truncate description to a specific length
- * @param {string} description - Description text
- * @param {number} maxLength - Maximum length
- * @returns {string} - Truncated description
+ * Set active navigation item based on current page
  */
-function truncateDescription(description, maxLength) {
-  if (!description) return '';
+function setActiveNavItem() {
+  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  const navLinks = document.querySelectorAll('nav a');
   
-  if (description.length <= maxLength) {
-    return description;
-  }
-  
-  return description.substring(0, maxLength) + '...';
+  navLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href === currentPage) {
+      link.classList.add('active');
+    }
+  });
 }

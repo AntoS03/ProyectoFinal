@@ -1,215 +1,181 @@
 /**
- * Search page functionality
+ * Search page script
+ * Handles property search and filtering
  */
 
-// DOM Elements
-const searchForm = document.getElementById('searchForm');
-const ciudadInput = document.getElementById('ciudadInput');
-const precioInput = document.getElementById('precioInput');
-const resultsContainer = document.getElementById('resultsContainer');
-const loadingIndicator = document.getElementById('loadingIndicator');
-const noResults = document.getElementById('noResults');
-
-/**
- * Initialize search page
- */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Set up search form submission
-  setupSearchForm();
+  // Check authentication and update navigation
+  await updateNavigation();
+
+  // Load all properties on page load
+  loadAlojamientos();
+
+  // Setup search form submission
+  const searchForm = document.getElementById('searchForm');
+  if (searchForm) {
+    searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      loadAlojamientos();
+    });
+  }
+
+  // Setup mobile menu toggle
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const navMenu = document.getElementById('navMenu');
   
-  // Load all alojamientos on page load (no filters)
-  await loadAlojamientos();
-  
-  // Check if there are any stored filters from previous searches
-  restoreFilters();
+  if (menuBtn && navMenu) {
+    menuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  }
+
+  // Set active navigation item
+  setActiveNavItem();
+
+  // Restore previous search if available
+  restorePreviousSearch();
 });
 
 /**
- * Set up search form event listener
- */
-function setupSearchForm() {
-  if (!searchForm) return;
-  
-  searchForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Validate inputs
-    if (precioInput.value && parseFloat(precioInput.value) < 0) {
-      showAlert('Introduce un número válido para el precio máximo', 'error');
-      precioInput.classList.add('error');
-      return;
-    }
-    
-    // Remove error state if previously set
-    precioInput.classList.remove('error');
-    
-    // Save filters to localStorage
-    saveFilters();
-    
-    // Load results with filters
-    await loadAlojamientos();
-  });
-}
-
-/**
- * Save current filters to localStorage
- */
-function saveFilters() {
-  if (ciudadInput && precioInput) {
-    const filters = {
-      ciudad: ciudadInput.value.trim(),
-      precioMax: precioInput.value.trim()
-    };
-    
-    localStorage.setItem('search_filters', JSON.stringify(filters));
-  }
-}
-
-/**
- * Restore filters from localStorage
- */
-function restoreFilters() {
-  const savedFilters = localStorage.getItem('search_filters');
-  
-  if (savedFilters && ciudadInput && precioInput) {
-    try {
-      const filters = JSON.parse(savedFilters);
-      
-      if (filters.ciudad) ciudadInput.value = filters.ciudad;
-      if (filters.precioMax) precioInput.value = filters.precioMax;
-    } catch (error) {
-      console.error('Error parsing saved filters:', error);
-    }
-  }
-}
-
-/**
- * Load alojamientos with optional filters
+ * Load properties with optional filters
  */
 async function loadAlojamientos() {
-  if (!resultsContainer || !loadingIndicator || !noResults) return;
+  const resultsContainer = document.getElementById('searchResults');
+  if (!resultsContainer) return;
+
+  const ciudad = document.getElementById('ciudadInput')?.value.trim() || '';
+  const precioMax = document.getElementById('precioInput')?.value.trim() || '';
+
+  // Save search to localStorage
+  localStorage.setItem('lastSearch', JSON.stringify({ ciudad, precioMax }));
+
+  showSpinner('searchResults', true);
+  resultsContainer.innerHTML = '';
+
+  let query = '/alojamientos';
+  const params = [];
+
+  if (ciudad) {
+    params.push(`ciudad=${encodeURIComponent(ciudad)}`);
+  }
   
+  if (precioMax) {
+    params.push(`precioMax=${precioMax}`);
+  }
+
+  if (params.length > 0) {
+    query += `?${params.join('&')}`;
+  }
+
   try {
-    // Show loading indicator
-    showSpinner(loadingIndicator);
-    resultsContainer.classList.add('hidden');
-    noResults.classList.add('hidden');
-    
-    // Build query parameters
-    const ciudad = ciudadInput ? ciudadInput.value.trim() : '';
-    const precioMax = precioInput ? precioInput.value.trim() : '';
-    
-    let query = '/alojamientos';
-    const params = [];
-    
-    if (ciudad) {
-      params.push(`ciudad=${encodeURIComponent(ciudad)}`);
-    }
-    
-    if (precioMax) {
-      params.push(`precioMax=${encodeURIComponent(precioMax)}`);
-    }
-    
-    if (params.length > 0) {
-      query += `?${params.join('&')}`;
-    }
-    
-    // Fetch alojamientos
     const response = await apiGet(query);
     
-    // Hide loading indicator
-    hideSpinner(loadingIndicator);
-    
     if (response.ok) {
-      const alojamientos = await response.json();
+      const data = await response.json();
       
-      if (alojamientos.length === 0) {
-        // No results found
-        resultsContainer.classList.add('hidden');
-        noResults.classList.remove('hidden');
-      } else {
-        // Render results
-        renderResults(alojamientos);
-        resultsContainer.classList.remove('hidden');
+      if (data.length === 0) {
+        resultsContainer.innerHTML = `
+          <div class="alert alert-warning">
+            No se encontraron alojamientos para estos criterios.
+          </div>
+        `;
+        return;
       }
+      
+      renderResults(data);
     } else {
-      // Handle error
-      showAlert('Error al cargar alojamientos. Inténtalo de nuevo.', 'error');
-      console.error('Error response:', response.status);
+      showAlert('Error al cargar alojamientos, inténtalo de nuevo.', 'error');
     }
   } catch (error) {
-    // Hide loading indicator
-    hideSpinner(loadingIndicator);
-    
-    // Show error
-    showAlert('Error al cargar alojamientos. Inténtalo de nuevo.', 'error');
-    console.error('Error in loadAlojamientos:', error);
+    console.error('Error:', error);
+    showAlert('Error al cargar alojamientos, inténtalo de nuevo.', 'error');
+  } finally {
+    hideSpinner('searchResults');
   }
 }
 
 /**
- * Render alojamientos results
- * @param {Array} alojamientos - List of alojamientos to render
+ * Render search results
+ * @param {Array} alojamientos - Array of property objects
  */
 function renderResults(alojamientos) {
-  if (!resultsContainer) return;
-  
-  // Clear previous results
-  resultsContainer.innerHTML = '';
-  
-  // Create and append card for each alojamiento
-  alojamientos.forEach(alojamiento => {
-    const card = createAlojamientoCard(alojamiento);
-    resultsContainer.appendChild(card);
-  });
-}
+  const container = document.getElementById('searchResults');
+  if (!container) return;
 
-/**
- * Create an alojamiento card element
- * @param {object} alojamiento - Alojamiento data
- * @returns {HTMLElement} - Card element
- */
-function createAlojamientoCard(alojamiento) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  
-  // Use placeholder image if no image is available
-  const imageSrc = alojamiento.imagen_principal_ruta || 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
-  
-  card.innerHTML = `
-    <div class="card-img">
-      <img src="${imageSrc}" alt="Imagen de ${alojamiento.nombre}" loading="lazy">
-    </div>
-    <div class="card-body">
-      <h3 class="card-title">${alojamiento.nombre}</h3>
-      <p class="card-location">
-        <i class="fas fa-map-marker-alt"></i> ${alojamiento.ciudad}
-      </p>
-      <p class="card-price">${formatPrice(alojamiento.precio_noche)} / noche</p>
-      <p class="card-description">${truncateDescription(alojamiento.descripcion, 100)}</p>
-    </div>
-    <div class="card-footer">
-      <a href="detail.html?id=${alojamiento.id}" class="btn btn-primary btn-block">
-        Ver detalles
-      </a>
+  const resultsHTML = alojamientos.map(alojamiento => {
+    // Truncate description to 100 characters if exists
+    const description = alojamiento.descripcion 
+      ? `<p class="card-text">${alojamiento.descripcion.substring(0, 100)}${alojamiento.descripcion.length > 100 ? '...' : ''}</p>` 
+      : '';
+
+    return `
+      <div class="col col-sm-6 col-md-4">
+        <div class="card">
+          <div class="card-img">
+            <img src="${alojamiento.imagen_principal_ruta || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg'}" 
+                 alt="Imagen de ${alojamiento.nombre}" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">${alojamiento.nombre}</h3>
+            <div class="card-location">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              ${alojamiento.ciudad}
+            </div>
+            <div class="card-price">${formatPrice(alojamiento.precio_noche)} / noche</div>
+            ${description}
+            <div class="card-footer">
+              <a href="detail.html?id=${alojamiento.id}" class="btn btn-block">Ver detalles</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="row">
+      ${resultsHTML}
     </div>
   `;
-  
-  return card;
 }
 
 /**
- * Truncate description to a specific length
- * @param {string} description - Description text
- * @param {number} maxLength - Maximum length
- * @returns {string} - Truncated description
+ * Restore previous search from localStorage
  */
-function truncateDescription(description, maxLength) {
-  if (!description) return '';
-  
-  if (description.length <= maxLength) {
-    return description;
+function restorePreviousSearch() {
+  const savedSearch = localStorage.getItem('lastSearch');
+  if (!savedSearch) return;
+
+  try {
+    const { ciudad, precioMax } = JSON.parse(savedSearch);
+    
+    const ciudadInput = document.getElementById('ciudadInput');
+    const precioInput = document.getElementById('precioInput');
+    
+    if (ciudadInput && ciudad) {
+      ciudadInput.value = ciudad;
+    }
+    
+    if (precioInput && precioMax) {
+      precioInput.value = precioMax;
+    }
+  } catch (e) {
+    console.error('Error restoring previous search:', e);
   }
+}
+
+/**
+ * Set active navigation item based on current page
+ */
+function setActiveNavItem() {
+  const navLinks = document.querySelectorAll('nav a');
   
-  return description.substring(0, maxLength) + '...';
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === 'search.html') {
+      link.classList.add('active');
+    }
+  });
 }

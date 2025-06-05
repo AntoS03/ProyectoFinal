@@ -1,334 +1,261 @@
 /**
- * Authentication functionality for login and register pages
+ * Authentication scripts
+ * Handles login and registration
  */
 
-// Login page elements
-const loginForm = document.getElementById('loginForm');
-const loginBtn = document.getElementById('loginBtn');
-const loginBtnText = document.getElementById('loginBtnText');
-const loginSpinner = document.getElementById('loginSpinner');
-const loginError = document.getElementById('loginError');
-const registrationSuccess = document.getElementById('registrationSuccess');
-
-// Register page elements
-const registerForm = document.getElementById('registerForm');
-const emailReg = document.getElementById('emailReg');
-const passwordReg = document.getElementById('passwordReg');
-const confirmPassword = document.getElementById('confirmPassword');
-const emailError = document.getElementById('emailError');
-const passwordError = document.getElementById('passwordError');
-const confirmError = document.getElementById('confirmError');
-const registerError = document.getElementById('registerError');
-const registerBtn = document.getElementById('registerBtn');
-const registerBtnText = document.getElementById('registerBtnText');
-const registerSpinner = document.getElementById('registerSpinner');
-
-/**
- * Initialize auth functionality
- */
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if we're on login page with a registration success parameter
-  checkRegistrationSuccess();
+  // Setup mobile menu toggle
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const navMenu = document.getElementById('navMenu');
   
-  // Setup login form
-  setupLoginForm();
-  
-  // Setup register form
-  setupRegisterForm();
-  
-  // Check if we're on a protected page
-  checkRedirectAfterLogin();
+  if (menuBtn && navMenu) {
+    menuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  }
+
+  // Initialize login form if exists
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    setupLoginForm();
+    
+    // Check for registration success message
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('registered') === 'true') {
+      showAlert('Registro exitoso. Ahora inicia sesión.', 'success');
+    }
+  }
+
+  // Initialize register form if exists
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    setupRegisterForm();
+  }
+
+  // Set active navigation item
+  setActiveNavItem();
 });
 
 /**
- * Check if we need to show registration success message
- */
-function checkRegistrationSuccess() {
-  if (!registrationSuccess) return;
-  
-  const params = getQueryParams();
-  
-  if (params.registered === 'true') {
-    registrationSuccess.classList.remove('hidden');
-  }
-}
-
-/**
- * Setup login form submission
+ * Setup login form
  */
 function setupLoginForm() {
-  if (!loginForm) return;
-  
+  const loginForm = document.getElementById('loginForm');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const loginBtn = document.getElementById('loginBtn');
+
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // Get form values
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    
-    // Validate inputs
-    if (!email || !password) {
-      if (loginError) {
-        loginError.textContent = 'Por favor, completa todos los campos';
-        loginError.classList.remove('hidden');
-      }
-      return;
-    }
-    
-    // Hide previous errors
-    if (loginError) {
-      loginError.classList.add('hidden');
-    }
-    
-    // Disable form while submitting
-    if (loginBtn) loginBtn.disabled = true;
-    if (loginBtnText) loginBtnText.textContent = 'Iniciando sesión...';
-    if (loginSpinner) loginSpinner.classList.remove('hidden');
-    
+
+    // Validate form
+    if (!validateLoginForm()) return;
+
+    // Disable button and show loading
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+
     try {
-      // Send login request
-      const response = await apiPost('/auth/login', { email, password });
-      
+      const response = await apiPost('/auth/login', {
+        email: emailInput.value.trim(),
+        password: passwordInput.value
+      });
+
       if (response.ok) {
-        // Successful login
-        const redirectTo = getRedirectUrl() || 'profile.html';
-        window.location.href = redirectTo;
+        // Redirect to profile page
+        window.location.href = 'profile.html';
       } else {
-        // Failed login
-        if (loginError) {
-          loginError.textContent = 'Credenciales inválidas. Inténtalo de nuevo.';
-          loginError.classList.remove('hidden');
-        }
+        const error = await response.json();
+        showAlert(error.error || 'Credenciales inválidas. Inténtalo de nuevo.', 'error');
         
-        // Re-enable form
-        if (loginBtn) loginBtn.disabled = false;
-        if (loginBtnText) loginBtnText.textContent = 'Entrar';
-        if (loginSpinner) loginSpinner.classList.add('hidden');
+        // Focus password field
+        passwordInput.focus();
       }
     } catch (error) {
-      console.error('Login error:', error);
-      
-      // Show error message
-      if (loginError) {
-        loginError.textContent = 'Error al iniciar sesión. Inténtalo de nuevo.';
-        loginError.classList.remove('hidden');
-      }
-      
-      // Re-enable form
-      if (loginBtn) loginBtn.disabled = false;
-      if (loginBtnText) loginBtnText.textContent = 'Entrar';
-      if (loginSpinner) loginSpinner.classList.add('hidden');
+      console.error('Error:', error);
+      showAlert('Error al iniciar sesión. Inténtalo de nuevo.', 'error');
+    } finally {
+      // Re-enable button
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar';
     }
   });
 }
 
 /**
- * Setup register form submission with validation
+ * Validate login form
+ * @returns {boolean} - Whether form is valid
+ */
+function validateLoginForm() {
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const emailError = document.getElementById('emailError');
+  const passwordError = document.getElementById('passwordError');
+  
+  let isValid = true;
+
+  // Reset errors
+  emailError.textContent = '';
+  passwordError.textContent = '';
+  emailInput.classList.remove('is-invalid');
+  passwordInput.classList.remove('is-invalid');
+
+  // Validate email
+  if (!emailInput.value.trim()) {
+    emailError.textContent = 'El correo electrónico es obligatorio';
+    emailInput.classList.add('is-invalid');
+    isValid = false;
+  } else if (!isValidEmail(emailInput.value.trim())) {
+    emailError.textContent = 'Introduce un correo electrónico válido';
+    emailInput.classList.add('is-invalid');
+    isValid = false;
+  }
+
+  // Validate password
+  if (!passwordInput.value) {
+    passwordError.textContent = 'La contraseña es obligatoria';
+    passwordInput.classList.add('is-invalid');
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+/**
+ * Setup register form
  */
 function setupRegisterForm() {
-  if (!registerForm) return;
-  
-  // Add input validation
-  if (emailReg) {
-    emailReg.addEventListener('blur', validateEmail);
-  }
-  
-  if (passwordReg) {
-    passwordReg.addEventListener('blur', validatePassword);
-  }
-  
-  if (confirmPassword) {
-    confirmPassword.addEventListener('blur', validateConfirmPassword);
-  }
-  
-  // Form submission
+  const registerForm = document.getElementById('registerForm');
+  const emailInput = document.getElementById('emailReg');
+  const passwordInput = document.getElementById('passwordReg');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  const nombreInput = document.getElementById('nombreReg');
+  const apellidosInput = document.getElementById('apellidosReg');
+  const registerBtn = document.getElementById('registerBtn');
+
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // Validate all fields
-    const isEmailValid = validateEmail();
-    const isPasswordValid = validatePassword();
-    const isConfirmValid = validateConfirmPassword();
-    
-    if (!isEmailValid || !isPasswordValid || !isConfirmValid) {
-      return;
-    }
-    
-    // Get form values
-    const email = emailReg.value.trim();
-    const password = passwordReg.value;
-    const nombre = document.getElementById('nombreReg')?.value.trim() || '';
-    const apellidos = document.getElementById('apellidosReg')?.value.trim() || '';
-    
-    // Hide previous errors
-    if (registerError) {
-      registerError.classList.add('hidden');
-    }
-    
-    // Disable form while submitting
-    if (registerBtn) registerBtn.disabled = true;
-    if (registerBtnText) registerBtnText.textContent = 'Registrando...';
-    if (registerSpinner) registerSpinner.classList.remove('hidden');
-    
+
+    // Validate form
+    if (!validateRegisterForm()) return;
+
+    // Disable button and show loading
+    registerBtn.disabled = true;
+    registerBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+
     try {
-      // Send registration request
-      const response = await apiPost('/auth/register', { 
-        email, 
-        password,
-        nombre,
-        apellidos
+      const response = await apiPost('/auth/register', {
+        email: emailInput.value.trim(),
+        password: passwordInput.value,
+        nombre: nombreInput.value.trim(),
+        apellidos: apellidosInput.value.trim()
       });
-      
-      if (response.status === 201) {
-        // Successful registration
+
+      if (response.ok) {
+        // Redirect to login page with success message
         window.location.href = 'login.html?registered=true';
-      } else if (response.status === 409) {
-        // Email already exists
-        if (registerError) {
-          registerError.textContent = 'Correo ya registrado. Usa otro.';
-          registerError.classList.remove('hidden');
-        }
-        
-        // Re-enable form
-        if (registerBtn) registerBtn.disabled = false;
-        if (registerBtnText) registerBtnText.textContent = 'Registrarse';
-        if (registerSpinner) registerSpinner.classList.add('hidden');
       } else {
-        // Other error
-        if (registerError) {
-          registerError.textContent = 'Error al registrarse. Inténtalo de nuevo.';
-          registerError.classList.remove('hidden');
-        }
+        const error = await response.json();
         
-        // Re-enable form
-        if (registerBtn) registerBtn.disabled = false;
-        if (registerBtnText) registerBtnText.textContent = 'Registrarse';
-        if (registerSpinner) registerSpinner.classList.add('hidden');
+        if (response.status === 409) {
+          showAlert('Correo ya registrado. Usa otro.', 'error');
+          emailInput.classList.add('is-invalid');
+          emailInput.focus();
+        } else {
+          showAlert(error.error || 'Error al registrarse.', 'error');
+        }
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      
-      // Show error message
-      if (registerError) {
-        registerError.textContent = 'Error al registrarse. Inténtalo de nuevo.';
-        registerError.classList.remove('hidden');
-      }
-      
-      // Re-enable form
-      if (registerBtn) registerBtn.disabled = false;
-      if (registerBtnText) registerBtnText.textContent = 'Registrarse';
-      if (registerSpinner) registerSpinner.classList.add('hidden');
+      console.error('Error:', error);
+      showAlert('Error al registrarse. Inténtalo de nuevo.', 'error');
+    } finally {
+      // Re-enable button
+      registerBtn.disabled = false;
+      registerBtn.textContent = 'Registrarse';
     }
   });
 }
 
 /**
- * Validate email input
- * @returns {boolean} - True if valid
+ * Validate registration form
+ * @returns {boolean} - Whether form is valid
  */
-function validateEmail() {
-  if (!emailReg || !emailError) return true;
+function validateRegisterForm() {
+  const emailInput = document.getElementById('emailReg');
+  const passwordInput = document.getElementById('passwordReg');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  const emailError = document.getElementById('emailRegError');
+  const passwordError = document.getElementById('passwordRegError');
+  const confirmPasswordError = document.getElementById('confirmPasswordError');
   
-  const email = emailReg.value.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
-  if (!email) {
+  let isValid = true;
+
+  // Reset errors
+  emailError.textContent = '';
+  passwordError.textContent = '';
+  confirmPasswordError.textContent = '';
+  emailInput.classList.remove('is-invalid');
+  passwordInput.classList.remove('is-invalid');
+  confirmPasswordInput.classList.remove('is-invalid');
+
+  // Validate email
+  if (!emailInput.value.trim()) {
     emailError.textContent = 'El correo electrónico es obligatorio';
-    emailError.classList.remove('hidden');
-    emailReg.classList.add('error');
-    return false;
-  }
-  
-  if (!emailRegex.test(email)) {
+    emailInput.classList.add('is-invalid');
+    isValid = false;
+  } else if (!isValidEmail(emailInput.value.trim())) {
     emailError.textContent = 'Introduce un correo electrónico válido';
-    emailError.classList.remove('hidden');
-    emailReg.classList.add('error');
-    return false;
+    emailInput.classList.add('is-invalid');
+    isValid = false;
   }
-  
-  emailError.classList.add('hidden');
-  emailReg.classList.remove('error');
-  return true;
-}
 
-/**
- * Validate password input
- * @returns {boolean} - True if valid
- */
-function validatePassword() {
-  if (!passwordReg || !passwordError) return true;
-  
-  const password = passwordReg.value;
-  
-  if (!password) {
+  // Validate password
+  if (!passwordInput.value) {
     passwordError.textContent = 'La contraseña es obligatoria';
-    passwordError.classList.remove('hidden');
-    passwordReg.classList.add('error');
-    return false;
-  }
-  
-  if (password.length < 8) {
+    passwordInput.classList.add('is-invalid');
+    isValid = false;
+  } else if (passwordInput.value.length < 8) {
     passwordError.textContent = 'La contraseña debe tener al menos 8 caracteres';
-    passwordError.classList.remove('hidden');
-    passwordReg.classList.add('error');
-    return false;
+    passwordInput.classList.add('is-invalid');
+    isValid = false;
   }
-  
-  passwordError.classList.add('hidden');
-  passwordReg.classList.remove('error');
-  return true;
+
+  // Validate confirm password
+  if (!confirmPasswordInput.value) {
+    confirmPasswordError.textContent = 'Confirma tu contraseña';
+    confirmPasswordInput.classList.add('is-invalid');
+    isValid = false;
+  } else if (confirmPasswordInput.value !== passwordInput.value) {
+    confirmPasswordError.textContent = 'Las contraseñas no coinciden';
+    confirmPasswordInput.classList.add('is-invalid');
+    isValid = false;
+  }
+
+  return isValid;
 }
 
 /**
- * Validate confirm password input
- * @returns {boolean} - True if valid
+ * Validate email format
+ * @param {string} email - Email to validate
+ * @returns {boolean} - Whether email is valid
  */
-function validateConfirmPassword() {
-  if (!confirmPassword || !confirmError || !passwordReg) return true;
-  
-  const password = passwordReg.value;
-  const confirm = confirmPassword.value;
-  
-  if (!confirm) {
-    confirmError.textContent = 'Debes confirmar la contraseña';
-    confirmError.classList.remove('hidden');
-    confirmPassword.classList.add('error');
-    return false;
-  }
-  
-  if (password !== confirm) {
-    confirmError.textContent = 'Las contraseñas no coinciden';
-    confirmError.classList.remove('hidden');
-    confirmPassword.classList.add('error');
-    return false;
-  }
-  
-  confirmError.classList.add('hidden');
-  confirmPassword.classList.remove('error');
-  return true;
+function isValidEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
 
 /**
- * Get redirect URL from query parameters
- * @returns {string|null} - Redirect URL or null
+ * Set active navigation item based on current page
  */
-function getRedirectUrl() {
-  const params = getQueryParams();
-  return params.next || null;
-}
-
-/**
- * Check if we should redirect after login
- */
-function checkRedirectAfterLogin() {
-  const redirectUrl = getRedirectUrl();
+function setActiveNavItem() {
+  const currentPage = window.location.pathname.split('/').pop();
+  const navLinks = document.querySelectorAll('nav a');
   
-  if (redirectUrl) {
-    // Update the login form to show the redirect destination
-    const loginHeading = document.querySelector('.auth-form-container h1');
-    
-    if (loginHeading) {
-      loginHeading.textContent = 'Iniciar Sesión para continuar';
+  navLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if ((currentPage === 'login.html' && href === 'login.html') || 
+        (currentPage === 'register.html' && href === 'register.html')) {
+      link.classList.add('active');
     }
-  }
+  });
 }

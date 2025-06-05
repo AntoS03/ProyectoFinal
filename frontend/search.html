@@ -5,74 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Buscar Alojamientos - BookingApp</title>
   <link rel="stylesheet" href="static/css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <header>
-    <div class="container">
-      <nav>
-        <div class="logo">
-          <a href="index.html">
-            <i class="fas fa-home"></i> BookingApp
-          </a>
-        </div>
-        <ul class="nav-links">
+    <div class="container header-container">
+      <a href="index.html" class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        ProyectoFinal
+      </a>
+      
+      <button id="mobileMenuBtn" class="mobile-menu-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      
+      <nav id="navMenu" class="nav-menu">
+        <ul>
           <li><a href="index.html">Inicio</a></li>
-          <li><a href="search.html" class="active">Buscar</a></li>
+          <li><a href="search.html">Buscar</a></li>
           <li id="authLinks">
+            <!-- This will be populated by updateNavigation() in JS -->
             <a href="login.html">Iniciar Sesión</a>
             <a href="register.html">Registrarse</a>
           </li>
-          <li id="profileLink" class="hidden">
-            <a href="profile.html">Mi Perfil</a>
-          </li>
         </ul>
-        <div class="menu-toggle">
-          <i class="fas fa-bars"></i>
-        </div>
       </nav>
     </div>
   </header>
 
+  <div id="alertContainer"></div>
+
   <main>
-    <div id="alertContainer"></div>
-    
-    <section class="search-section">
-      <div class="container">
-        <h1>Buscar Alojamientos</h1>
-        
-        <form id="searchForm" class="search-form">
-          <div class="form-group">
-            <label for="ciudadInput">Ciudad</label>
+    <div class="container">
+      <h1>Buscar Alojamientos</h1>
+      
+      <form id="searchForm" class="search-form">
+        <div class="search-row">
+          <div class="search-group">
+            <label for="ciudadInput" class="form-label">Ciudad</label>
             <input type="text" id="ciudadInput" class="form-control" placeholder="Ciudad (p.ej., Madrid)">
           </div>
-          <div class="form-group">
-            <label for="precioInput">Precio máximo (€)</label>
+          
+          <div class="search-group">
+            <label for="precioInput" class="form-label">Precio máximo (€)</label>
             <input type="number" id="precioInput" class="form-control" placeholder="Precio máximo (€)" min="0">
-            <small class="form-text">Introduce un número en euros (sin símbolo)</small>
-          </div>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-search"></i> Buscar
-          </button>
-        </form>
-        
-        <div class="search-results">
-          <div id="loadingIndicator" class="loading-container">
-            <div class="spinner"></div>
-            <p>Cargando alojamientos...</p>
+            <small>Introduce un número en euros (sin símbolo)</small>
           </div>
           
-          <div id="resultsContainer" class="grid-3">
-            <!-- Results will be populated here by JavaScript -->
-          </div>
-          
-          <div id="noResults" class="no-results hidden">
-            <i class="fas fa-search"></i>
-            <p>No se encontraron alojamientos para estos criterios.</p>
+          <div class="search-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              Buscar
+            </button>
           </div>
         </div>
+      </form>
+      
+      <div id="searchResults">
+        <p class="text-center">Cargando alojamientos...</p>
       </div>
-    </section>
+    </div>
   </main>
 
   <footer>
@@ -82,7 +83,6 @@
   </footer>
 
   <script src="static/js/fetch-api.js"></script>
-  <script src="static/js/common.js"></script>
   <script src="static/js/search.js"></script>
 </body>
 </html>
