@@ -88,7 +88,7 @@ async function apiDelete(path) {
  */
 async function checkAuth() {
   try {
-    const response = await apiGet('/reservas');
+    const response = await apiGet('/reservas/');
     return response.status === 200;
   } catch (error) {
     return false;
