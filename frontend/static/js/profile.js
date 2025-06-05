@@ -154,14 +154,15 @@ async function handleCreateAlojamiento(event) {
   }
 
   // 1) Validazione base
-  const nombre = document.getElementById('nombreAloj').value.trim();
-  const direccion = document.getElementById('direccionAloj').value.trim();
-  const ciudad = document.getElementById('ciudadAloj').value.trim();
-  const estado = document.getElementById('estadoAloj').value.trim();
+  const nombre      = document.getElementById('nombreAloj').value.trim();
+  const direccion   = document.getElementById('direccionAloj').value.trim();
+  const ciudad      = document.getElementById('ciudadAloj').value.trim();
+  const estado      = document.getElementById('estadoAloj').value.trim();
   const descripcion = document.getElementById('descripcionAloj').value.trim();
-  const precio = document.getElementById('precioAloj').value;
-  const linkMap = document.getElementById('linkMapAloj').value.trim();
-  const imageInput = document.getElementById('imageAlojInput');
+  const precio      = document.getElementById('precioAloj').value;
+  const linkMap     = document.getElementById('linkMapAloj').value.trim();
+  const imageInput  = document.getElementById('imageAlojInput');
+
   if (!nombre || !direccion || !ciudad || !estado || !descripcion || !precio || imageInput.files.length === 0) {
     showAlert('Compila tutti i campi obbligatori (*)', 'error');
     if (submitBtn) {
@@ -187,7 +188,7 @@ async function handleCreateAlojamiento(event) {
       const jsonImg = await respImg.json();
       imagenPrincipalRuta = jsonImg.imagen_principal_ruta;
     } else {
-      const err = await respImg.json();
+      const err = await respImg.json().catch(() => ({}));
       showAlert(err.error || 'Error al cargar imagen', 'error');
       throw 'fail upload image';
     }
@@ -217,10 +218,12 @@ async function handleCreateAlojamiento(event) {
     if (respAloj.ok) {
       showAlert('Alojamiento creato con successo!', 'success');
       resetAlojForm();
+      // Chiudo il modal di inserimento
       document.getElementById('formAddAlojModal').style.display = 'none';
-      loadOwnerAlojamientos();  // Ricarico la lista aggiornata
+      // Ricarico la lista “Mis Alojamientos”
+      loadOwnerAlojamientos();
     } else {
-      const err = await respAloj.json();
+      const err = await respAloj.json().catch(() => ({}));
       showAlert(err.error || 'Errore durante la creazione dell\'alojamiento', 'error');
     }
   } catch (err) {
@@ -233,6 +236,7 @@ async function handleCreateAlojamiento(event) {
     }
   }
 }
+
 
 async function loadOwnerReservaRequests() {
   const container = document.getElementById('ownerReservaRequests');
