@@ -629,6 +629,21 @@ footer {
   font-weight: 600;
 }
 
+/*Updates*/
+/* Nel caso il modulo di creazione occupi troppo spazio, puoi limitare la larghezza: */
+#formAddAlojModal .auth-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Per separare un po’ meglio le sezioni di “Mis Alojamientos” */
+#formAddAlojModal {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }

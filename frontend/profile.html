@@ -106,6 +106,7 @@
         <div class="tab-links">
           <a href="#reservasTab" class="tab-link active">Mis Reservas</a>
           <a href="#accountTab" class="tab-link">Mi Cuenta</a>
+          <a href="#misAlojamientosTab" class="tab-link">Mis Alojamientos</a>  <!-- NUOVO -->
         </div>
 
         <div id="reservasTab" class="tab-content active">
@@ -151,6 +152,70 @@
             <button id="logoutBtn" class="btn btn-primary">Cerrar sesión</button>
           </div>
         </div>
+        <!-- ====== NUOVA SEZIONE “Mis Alojamientos” ====== -->
+        <div id="misAlojamientosTab" class="tab-content">
+          <h2>Mis Alojamientos</h2>
+
+          <!-- 1) Pulsante “Añadir alojamiento” -->
+          <button id="btnAddAloj" class="btn btn-primary" style="margin-bottom:1rem;">
+            Añadir Alojamiento
+          </button>
+
+          <!-- 2) Lista degli alojamientos creati -->
+          <div id="ownerAlojamientos">
+            <p class="text-center">Cargando tus alojamientos...</p>
+          </div>
+
+          <!-- 3) Form per creare nuovo alojamiento (inizialmente nascosto) -->
+          <div id="formAddAlojModal" style="display:none; margin-top:2rem;">
+            <div class="auth-container" style="max-width:700px;">
+              <h3>Crear nuevo Alojamiento</h3>
+              <form id="createAlojForm" enctype="multipart/form-data">
+                <div class="form-group">
+                  <label for="nombreAloj" class="form-label">Nombre *</label>
+                  <input type="text" id="nombreAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="direccionAloj" class="form-label">Dirección *</label>
+                  <input type="text" id="direccionAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="ciudadAloj" class="form-label">Ciudad *</label>
+                  <input type="text" id="ciudadAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="estadoAloj" class="form-label">Estado o País *</label>
+                  <input type="text" id="estadoAloj" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="descripcionAloj" class="form-label">Descripción *</label>
+                  <textarea id="descripcionAloj" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="precioAloj" class="form-label">Precio por noche (€) *</label>
+                  <input type="number" id="precioAloj" class="form-control" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                  <label for="linkMapAloj" class="form-label">Link a mapa (opzional)</label>
+                  <input type="url" id="linkMapAloj" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="imageAlojInput" class="form-label">Imagen principal *</label>
+                  <input type="file" id="imageAlojInput" name="image" accept="image/*" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Crear Alojamiento</button>
+                <button type="button" id="cancelAddAloj" class="btn btn-secondary" style="margin-left:8px;">Cancelar</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 4) Sezione “Richieste di Prenotazione” -->
+          <h3 style="margin-top:2rem;">Richieste di Prenotazione Pendiente</h3>
+          <div id="ownerReservaRequests">
+            <p class="text-center">Cargando solicitudes...</p>
+          </div>
+        </div>
+        <!-- ====== FINE “Mis Alojamientos” ====== -->
       </div>
     </div>
   </main>

@@ -4,6 +4,7 @@ from extensions import db
 from models import Alojamiento
 from sqlalchemy import and_
 from utils import login_required
+from werkzeug.utils import secure_filename
 
 alojamientos_bp = Blueprint('alojamientos', __name__)
 
@@ -89,7 +90,7 @@ def create_alojamiento():
     user_id = session['user_id']  # ID dell'utente autenticato
     
     # Controllo campi obbligatori
-    obbligatori = ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche']
+    obbligatori = ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche', 'imagen_principal_ruta']
     if not data or not all(key in data for key in obbligatori):
         return jsonify({'msg': 'Faltan campos obligatorios'}), 400
     
@@ -102,7 +103,7 @@ def create_alojamiento():
         estado_o_pais=data['estado_o_pais'],
         descripcion=data['descripcion'],
         precio_noche=data['precio_noche'],
-        imagen_principal_ruta=data.get('imagen_principal_ruta'),
+        imagen_principal_ruta=data['imagen_principal_ruta'],
         link_map=data.get('link_map')
     )
     db.session.add(a)
@@ -162,3 +163,68 @@ def delete_alojamiento(id):
     db.session.delete(a)
     db.session.commit()
     return jsonify({'message': 'Alojamiento eliminado'}), 200
+
+def allowed_aloj_file(filename):
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    return ext in current_app.config['ALLOWED_IMAGE_EXTENSIONS']
+
+@alojamientos_bp.route('/upload-image', methods=['POST'])
+def upload_alojamiento_image():
+    """
+    POST /alojamientos/upload-image
+    Riceve multipart/form-data con campo 'image', lo salva su disco e ritorna
+    { 'imagen_principal_ruta': '<percorso_relativo>' } in JSON.
+    """
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Autenticazione richiesta'}), 401
+
+    if 'image' not in request.files:
+        return jsonify({'error': 'Nessun file inviato'}), 400
+
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'Nome file non valido'}), 400
+
+    if not allowed_aloj_file(file.filename):
+        return jsonify({'error': 'Formato immagine non consentito'}), 400
+
+    filename = secure_filename(file.filename)
+    prefix = f"user_{user_id}_"
+    filename = prefix + filename
+
+    upload_folder = current_app.config['UPLOAD_ALOJ_FOLDER']
+    os.makedirs(upload_folder, exist_ok=True)
+    save_path = os.path.join(upload_folder, filename)
+
+    try:
+        file.save(save_path)
+    except Exception as e:
+        current_app.logger.error(f"Errore salvataggio immagine alojamiento: {e}")
+        return jsonify({'error': 'Errore interno durante il salvataggio del file'}), 500
+
+    # Percorso relativo per il frontend: es. "/static/uploads/alojamientos_img/user_5_house.jpg"
+    rel_path = f"/static/uploads/alojamientos_img/{filename}"
+    return jsonify({'imagen_principal_ruta': rel_path}), 200
+
+@alojamientos_bp.route('/owner', methods=['GET'])
+@login_required
+def get_owner_alojamientos():
+    """
+    GET /alojamientos/owner
+    Ritorna la lista di tutti gli alojamientos creati dall’utente corrente.
+    """
+    user_id = session['user_id']
+    alojamientos = Alojamiento.query.filter_by(id_propietario=user_id).all()
+
+    result = []
+    for a in alojamientos:
+        result.append({
+            'id': a.id_alojamiento,
+            'nombre': a.nombre,
+            'ciudad': a.ciudad,
+            'precio_noche': float(a.precio_noche),
+            'imagen_principal_ruta': a.imagen_principal_ruta
+        })
+    return jsonify(result), 200

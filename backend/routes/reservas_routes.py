@@ -4,6 +4,7 @@ from extensions import db
 from models import Reserva, Alojamiento
 from utils import login_required
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
 #from backend.utils import reserva_owner_required
 
@@ -149,3 +150,58 @@ def confirmar_reserva(id):
     reserva.estado_reserva = 'Confirmada'
     db.session.commit()
     return jsonify({'message': 'Reserva confirmada'}), 200
+
+@reservas_bp.route('/owner', methods=['GET'])
+@login_required
+def get_owner_reservas():
+    """
+    GET /reservas/owner
+    Ritorna tutte le prenotazioni 'Pendiente' relative agli alojamientos
+    del proprietario corrente.
+    """
+    user_id = session['user_id']
+    # Facciamo un join tra Rezerva e Alojamiento per filtrare su id_propietario
+
+    query = Reserva.query.options(joinedload(Reserva.alojamiento))\
+        .filter(Reserva.estado_reserva == 'Pendiente')\
+        .join(Alojamiento, Reserva.id_alojamiento == Alojamiento.id_alojamiento)\
+        .filter(Alojamiento.id_propietario == user_id)
+
+    reservas = query.all()
+    result = []
+    for r in reservas:
+        result.append({
+            'id_reserva': r.id_reserva,
+            'id_alojamiento': r.id_alojamiento,
+            'nombre_alojamiento': r.alojamiento.nombre,
+            'id_solicitante': r.id_usuario,
+            'fecha_inicio': r.fecha_inicio.isoformat(),
+            'fecha_fin': r.fecha_fin.isoformat(),
+            'estado_reserva': r.estado_reserva
+        })
+    return jsonify(result), 200
+
+@reservas_bp.route('/<int:id>/reject', methods=['PUT'])
+@login_required
+def reject_reserva(id):
+    """
+    PUT /reservas/<id>/reject
+    L’owner dell’alojamiento può rifiutare (impostare a 'Cancelada') la prenotazione.
+    """
+    user_id = session['user_id']
+    reserva = Reserva.query.get(id)
+    if not reserva:
+        return jsonify({'error': 'Reserva no encontrada'}), 404
+
+    # Verifico che sia il proprietario dell’alojamiento
+    alojamiento = Alojamiento.query.get(reserva.id_alojamiento)
+    if not alojamiento or alojamiento.id_propietario != user_id:
+        return jsonify({'error': 'No autorizado'}), 403
+
+    # Se la prenotazione è già stata gestita, non consento
+    if reserva.estado_reserva != 'Pendiente':
+        return jsonify({'error': 'Solo reservas pendientes pueden rechazarse'}), 400
+
+    reserva.estado_reserva = 'Cancelada'
+    db.session.commit()
+    return jsonify({'message': 'Reserva rifiutata'}), 200

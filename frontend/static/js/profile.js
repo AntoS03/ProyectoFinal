@@ -23,6 +23,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4) Carica le prenotazioni
   loadUserReservations();
 
+  const tabLinks = document.querySelectorAll('.tab-link');
+  tabLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      // rimuovo “active” da tutte le tab
+      tabLinks.forEach(l => l.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      // aggiungo “active” al link e al contenuto corrispondente
+      link.classList.add('active');
+      const tabId = link.getAttribute('href').substring(1);
+      document.getElementById(tabId).classList.add('active');
+
+      // Se apro “Mis Alojamientos”, carico la lista…
+      if (tabId === 'misAlojamientosTab') {
+        loadOwnerAlojamientos();
+        loadOwnerReservaRequests();
+      }
+    });
+  });
+  const btnAddAloj = document.getElementById('btnAddAloj');
+  if (btnAddAloj) {
+    btnAddAloj.addEventListener('click', () => {
+      document.getElementById('formAddAlojModal').style.display = 'block';
+    });
+  }
+  // Listener per il pulsante “Cancelar” nel form
+  const cancelAddAloj = document.getElementById('cancelAddAloj');
+  if (cancelAddAloj) {
+    cancelAddAloj.addEventListener('click', () => {
+      resetAlojForm();
+      document.getElementById('formAddAlojModal').style.display = 'none';
+    });
+  }
+
+  // 3) Setup submit form “createAlojForm”
+  const createAlojForm = document.getElementById('createAlojForm');
+  if (createAlojForm) {
+    createAlojForm.addEventListener('submit', handleCreateAlojamiento);
+  }
+
   // 5) Imposta il listener sul bottone di logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
@@ -49,6 +89,256 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
 });
 
+function resetAlojForm() {
+  const fields = [
+    'nombreAloj', 'direccionAloj', 'ciudadAloj', 'estadoAloj',
+    'descripcionAloj', 'precioAloj', 'linkMapAloj', 'imageAlojInput'
+  ];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+/**
+ * Carica e renderizza la lista degli alojamientos creati dall’utente
+ */
+async function loadOwnerAlojamientos() {
+  const container = document.getElementById('ownerAlojamientos');
+  if (!container) return;
+  showSpinner('ownerAlojamientos', true);
+  try {
+    const response = await apiGet('/alojamientos/owner');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.length === 0) {
+        container.innerHTML = '<p class="text-center">No tienes ningún alojamiento agregado.</p>';
+        return;
+      }
+      // Costruiamo una semplice griglia di carte
+      const html = data.map(a => `
+        <div class="col col-md-4" style="margin-bottom:1rem;">
+          <div class="card">
+            <div class="card-img" style="height:180px; overflow:hidden;">
+              <img src="${a.imagen_principal_ruta || 'https://via.placeholder.com/300x180'}" alt="Imagen de ${a.nombre}" />
+            </div>
+            <div class="card-body">
+              <h3 class="card-title">${a.nombre}</h3>
+              <div class="card-location">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                ${a.ciudad}
+              </div>
+              <div class="card-price">${formatPrice(a.precio_noche)}/noche</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      container.innerHTML = `<div class="row">${html}</div>`;
+    } else {
+      container.innerHTML = '<p class="text-center">Error al cargar alojamientos.</p>';
+    }
+  } catch (err) {
+    console.error('Errore loadOwnerAlojamientos:', err);
+    container.innerHTML = '<p class="text-center">Error de red al cargar alojamientos.</p>';
+  } finally {
+    hideSpinner('ownerAlojamientos');
+  }
+}
+
+async function handleCreateAlojamiento(event) {
+  event.preventDefault();
+  const submitBtn = document.querySelector('#createAlojForm button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando…';
+  }
+
+  // 1) Validazione base
+  const nombre = document.getElementById('nombreAloj').value.trim();
+  const direccion = document.getElementById('direccionAloj').value.trim();
+  const ciudad = document.getElementById('ciudadAloj').value.trim();
+  const estado = document.getElementById('estadoAloj').value.trim();
+  const descripcion = document.getElementById('descripcionAloj').value.trim();
+  const precio = document.getElementById('precioAloj').value;
+  const linkMap = document.getElementById('linkMapAloj').value.trim();
+  const imageInput = document.getElementById('imageAlojInput');
+  if (!nombre || !direccion || !ciudad || !estado || !descripcion || !precio || imageInput.files.length === 0) {
+    showAlert('Compila tutti i campi obbligatori (*)', 'error');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear Alojamiento';
+    }
+    return;
+  }
+
+  // 2) Carico immagine (FormData)
+  const file = imageInput.files[0];
+  const formData = new FormData();
+  formData.append('image', file);
+
+  let imagenPrincipalRuta = '';
+  try {
+    const respImg = await fetch('/api/alojamientos/upload-image', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+    if (respImg.ok) {
+      const jsonImg = await respImg.json();
+      imagenPrincipalRuta = jsonImg.imagen_principal_ruta;
+    } else {
+      const err = await respImg.json();
+      showAlert(err.error || 'Error al cargar imagen', 'error');
+      throw 'fail upload image';
+    }
+  } catch (err) {
+    console.error('Error upload image alojamiento:', err);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear Alojamiento';
+    }
+    return;
+  }
+
+  // 3) Creo l’alojamiento via JSON
+  const payload = {
+    nombre,
+    direccion,
+    ciudad,
+    estado_o_pais: estado,
+    descripcion,
+    precio_noche: parseFloat(precio),
+    imagen_principal_ruta: imagenPrincipalRuta,
+    link_map: linkMap || null
+  };
+
+  try {
+    const respAloj = await apiPost('/alojamientos', payload);
+    if (respAloj.ok) {
+      showAlert('Alojamiento creato con successo!', 'success');
+      resetAlojForm();
+      document.getElementById('formAddAlojModal').style.display = 'none';
+      loadOwnerAlojamientos();  // Ricarico la lista aggiornata
+    } else {
+      const err = await respAloj.json();
+      showAlert(err.error || 'Errore durante la creazione dell\'alojamiento', 'error');
+    }
+  } catch (err) {
+    console.error('Error create alojamiento:', err);
+    showAlert('Errore di rete durante la creazione.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear Alojamiento';
+    }
+  }
+}
+
+async function loadOwnerReservaRequests() {
+  const container = document.getElementById('ownerReservaRequests');
+  if (!container) return;
+  showSpinner('ownerReservaRequests', true);
+  try {
+    const response = await apiGet('/reservas/owner');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.length === 0) {
+        container.innerHTML = '<p class="text-center">No hay solicitudes pendientes.</p>';
+        return;
+      }
+      // Creiamo una tabella
+      const rows = data.map(r => {
+        return `
+          <tr>
+            <td>${r.nombre_alojamiento}</td>
+            <td>${formatDate(r.fecha_inicio)}</td>
+            <td>${formatDate(r.fecha_fin)}</td>
+            <td>
+              <button class="btn btn-sm btn-primary confirm-request" data-id="${r.id_reserva}">
+                Confirmar
+              </button>
+              <button class="btn btn-sm btn-danger reject-request" data-id="${r.id_reserva}" style="margin-left:4px;">
+                Rifiutar
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <table class="reservations-table">
+          <thead>
+            <tr>
+              <th>Alojamiento</th>
+              <th>Fecha Inicio</th>
+              <th>Fecha Fin</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+      setupOwnerRequestActions();
+    } else {
+      container.innerHTML = '<p class="text-center">Error al cargar solicitudes.</p>';
+    }
+  } catch (err) {
+    console.error('Error loadOwnerReservaRequests:', err);
+    container.innerHTML = '<p class="text-center">Error de red al cargar solicitudes.</p>';
+  } finally {
+    hideSpinner('ownerReservaRequests');
+  }
+}
+
+function setupOwnerRequestActions() {
+  // Confirmar
+  document.querySelectorAll('.confirm-request').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      try {
+        const resp = await fetch(`/api/reservas/${id}/confirm`, {
+          method: 'PUT',
+          credentials: 'include'
+        });
+        if (resp.ok) {
+          showAlert('Prenotazione confermata!', 'success');
+          loadOwnerReservaRequests();
+        } else {
+          const err = await resp.json();
+          showAlert(err.error || 'Errore conferma.', 'error');
+        }
+      } catch (err) {
+        console.error('Error confirm reservation:', err);
+        showAlert('Errore di rete.', 'error');
+      }
+    });
+  });
+
+  // Rifiutar
+  document.querySelectorAll('.reject-request').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      try {
+        const resp = await fetch(`/api/reservas/${id}/reject`, {
+          method: 'PUT',
+          credentials: 'include'
+        });
+        if (resp.ok) {
+          showAlert('Prenotazione rifiutata!', 'success');
+          loadOwnerReservaRequests();
+        } else {
+          const err = await resp.json();
+          showAlert(err.error || 'Errore rifiuto.', 'error');
+        }
+      } catch (err) {
+        console.error('Error reject reservation:', err);
+        showAlert('Errore di rete.', 'error');
+      }
+    });
+  });
+}
 
 /**
  * Carica i dati di profilo (GET /api/auth/me) e popola la pagina.
