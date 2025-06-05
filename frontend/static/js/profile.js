@@ -101,7 +101,7 @@ async function renderReservations(reservations) {
     
     if (!property) {
       try {
-        const response = await apiGet(`/alojamientos/${reserva.id_alojamiento}/`);
+        const response = await apiGet(`/alojamientos/${reserva.id_alojamiento}`);
         if (response.ok) {
           property = await response.json();
           propertyCache[reserva.id_alojamiento] = property;
