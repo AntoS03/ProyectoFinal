@@ -1,14 +1,14 @@
 # app.py
 
+from flask import Flask
 from config import Config
 from extensions import db
-from flask import Flask
-from flask_cors import CORS
-from routes.alojamientos_routes import alojamientos_bp
+from flask_cors import CORS 
+
 # Import dei blueprint
 from routes.auth_routes import auth_bp
+from routes.alojamientos_routes import alojamientos_bp
 from routes.reservas_routes import reservas_bp
-
 
 def create_app():
     app = Flask(__name__)
