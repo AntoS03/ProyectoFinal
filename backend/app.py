@@ -12,7 +12,7 @@ from routes.reservas_routes import reservas_bp
 
 def create_app():
     app = Flask(__name__)
-    #app.url_map.strict_slashes = False
+    app.url_map.strict_slashes = False
     app.config.from_object(Config)
 
     # Inizializzo le estensioni
