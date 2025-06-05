@@ -1,14 +1,14 @@
 # app.py
 
-from flask import Flask
 from config import Config
 from extensions import db
-from flask_cors import CORS 
-
+from flask import Flask
+from flask_cors import CORS
+from routes.alojamientos_routes import alojamientos_bp
 # Import dei blueprint
 from routes.auth_routes import auth_bp
-from routes.alojamientos_routes import alojamientos_bp
 from routes.reservas_routes import reservas_bp
+
 
 def create_app():
     app = Flask(__name__)
@@ -46,4 +46,4 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     # In ambiente di sviluppo useremo debug=True; in produzione metteremo False
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
