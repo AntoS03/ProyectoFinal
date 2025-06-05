@@ -3,6 +3,7 @@
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_PROFILE_IMAGE = os.path.join('..', 'frontend', 'static', 'uploads', 'user_profiles', 'default-profile.png')
 
 class Config:
     # Chiave segreta per proteggere session e JWT
@@ -28,4 +29,4 @@ class Config:
     # Dimensione massima upload (opzionale)
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
 
-    DEFAULT_PROFILE_IMAGE = os.path.join('..', 'frontend', 'static', 'uploads', 'user_profiles', 'default-profile.png')
+    

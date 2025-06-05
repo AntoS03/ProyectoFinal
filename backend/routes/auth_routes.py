@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 from extensions import db
 from models import Usuario
 from utils import login_required
+from config import DEFAULT_PROFILE_IMAGE
+
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -179,12 +181,9 @@ def reset_profile_image():
     if not user:
         return jsonify({'error': 'Usuario no encontrado'}), 404
     
-    # Percorso predefinito
-    DEFAULT_IMAGE = '/static/images/default-profile.png'
-    
     try:
         # Elimina l'immagine vecchia se esiste
-        if user.imagen_perfil_ruta and not user.imagen_perfil_ruta.startswith(DEFAULT_IMAGE):
+        if user.imagen_perfil_ruta and not user.imagen_perfil_ruta.startswith(DEFAULT_PROFILE_IMAGE):
             try:
                 old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 
                                         os.path.basename(user.imagen_perfil_ruta))
@@ -193,12 +192,12 @@ def reset_profile_image():
             except Exception as e:
                 current_app.logger.error(f"Error deleting old profile image: {str(e)}")
         
-        user.imagen_perfil_ruta = DEFAULT_IMAGE
+        user.imagen_perfil_ruta = DEFAULT_PROFILE_IMAGE
         db.session.commit()
         
         return jsonify({
             'message': 'Imagen restablecida correctamente',
-            'default_image': DEFAULT_IMAGE
+            'default_image': DEFAULT_PROFILE_IMAGE
         }), 200
         
     except Exception as e:
