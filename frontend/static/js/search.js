@@ -52,7 +52,7 @@ async function loadAlojamientos() {
   showSpinner('searchResults', true);
   resultsContainer.innerHTML = '';
 
-  let query = `${API_BASE}/alojamientos`;
+  let query = `${API_BASE}/alojamientos/`;
   const params = [];
 
   if (ciudad) {
