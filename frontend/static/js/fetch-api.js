@@ -1,5 +1,5 @@
 /**
- * ProyectoFinal API Client
+ * Best Booking API Client
  * Handles all API calls to the backend
  */
 

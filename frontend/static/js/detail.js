@@ -58,7 +58,7 @@ async function loadPropertyDetail(id) {
     if (response.ok) {
       const property = await response.json();
       renderPropertyDetail(property);
-      document.title = `${property.nombre} - ProyectoFinal`;
+      document.title = `${property.nombre} - Best Booking`;
       
       // Check if user is authenticated to show booking form
       const isLoggedIn = await checkAuth();
