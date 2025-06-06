@@ -33,7 +33,7 @@ class Alojamiento(db.Model):
     descripcion = db.Column(db.Text, nullable=False)
     precio_noche = db.Column(db.Numeric(10,2), nullable=False)
     imagen_principal_ruta = db.Column(db.String(512), nullable=True)
-    link_map = db.Column(db.String(300), nullable=True)
+    link_map = db.Column(db.String(400), nullable=True)
 
     # Relazioni
     reservas = db.relationship('Reserva', backref='alojamiento', lazy=True, cascade="all, delete-orphan")
