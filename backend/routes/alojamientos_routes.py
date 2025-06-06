@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, request, jsonify, session, current_app
 from extensions import db
-from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento
+from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento, Usuario
 from sqlalchemy import and_
 from utils import login_required
 from werkzeug.utils import secure_filename
