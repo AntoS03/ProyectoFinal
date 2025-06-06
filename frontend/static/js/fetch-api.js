@@ -88,9 +88,9 @@ async function apiDelete(path) {
  */
 async function checkAuth() {
   try {
-    const response = await apiGet('/reservas');
-    return response.status === 200;
-  } catch (error) {
+    const resp = await fetch('/api/reservas', { credentials: 'include' });
+    return resp.status === 200;
+  } catch {
     return false;
   }
 }
