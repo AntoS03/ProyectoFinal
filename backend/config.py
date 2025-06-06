@@ -30,3 +30,5 @@ class Config:
     # Dimensione massima upload (opzionale)
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
 
+    GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', 'AIzaSyCqe9NZZwT_luG4ub5ZrtCQ3a2E52VXdbo')
+

@@ -1,20 +1,16 @@
 import os
 from flask import Blueprint, request, jsonify, session, current_app
 from extensions import db
-from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento, Usuario
+from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento
 from sqlalchemy import and_
 from utils import login_required
 from werkzeug.utils import secure_filename
 
 alojamientos_bp = Blueprint('alojamientos', __name__)
 
-# Search properties with filtri
+# Search properties with filters
 @alojamientos_bp.route('/', methods=['GET'])
 def search_alojamientos():
-    """
-    GET /alojamientos
-    Restituisce tutti gli alloggi (con filtri su 'ciudad' e 'precioMax').
-    """
     ciudad = request.args.get('ciudad', type=str)
     precio_max = request.args.get('precioMax', type=float)
 
@@ -32,17 +28,16 @@ def search_alojamientos():
             'nombre': a.nombre,
             'ciudad': a.ciudad,
             'precio_noche': float(a.precio_noche),
-            'imagen_principal_ruta': a.imagen_principal_ruta
+            'imagen_principal_ruta': a.imagen_principal_ruta,
+            # **Riportiamo anche link_map_embed e link_map_url**
+            'link_map_embed': a.link_map_embed,
+            'link_map_url': a.link_map_url
         })
     return jsonify(result), 200
 
 # Property details
 @alojamientos_bp.route('/<int:id>', methods=['GET'])
 def detail_alojamiento(id):
-    """
-    GET /alojamientos/<id>
-    Restituisce i dettagli di un singolo alloggio.
-    """
     a = Alojamiento.query.get(id)
     if not a:
         return jsonify({'error': 'Alojamiento no encontrado'}), 404
@@ -56,7 +51,8 @@ def detail_alojamiento(id):
         'descripcion': a.descripcion,
         'precio_noche': float(a.precio_noche),
         'imagen_principal_ruta': a.imagen_principal_ruta,
-        'link_map': a.link_map
+        'link_map_embed': a.link_map_embed,
+        'link_map_url': a.link_map_url
     }
     return jsonify(resp), 200
 
@@ -64,15 +60,11 @@ def detail_alojamiento(id):
 @alojamientos_bp.route('/', methods=['POST'])
 @login_required
 def create_alojamiento():
-    """
-    POST /alojamientos
-    Crea un nuovo alloggio (richiede utente loggato).
-    Body JSON con tutti i campi obbligatori.
-    """
     data = request.get_json()
     user_id = session['user_id']
 
-    obbligatori = ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche', 'imagen_principal_ruta']
+    # Controllo campi obbligatori
+    obbligatori = ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche', 'imagen_principal_ruta', 'link_map_embed', 'link_map_url']
     if not data or not all(key in data for key in obbligatori):
         return jsonify({'msg': 'Faltan campos obligatorios'}), 400
 
@@ -85,20 +77,18 @@ def create_alojamiento():
         descripcion=data['descripcion'],
         precio_noche=data['precio_noche'],
         imagen_principal_ruta=data['imagen_principal_ruta'],
-        link_map=data.get('link_map')
+        link_map_embed=data['link_map_embed'],
+        link_map_url=data['link_map_url']
     )
     db.session.add(a)
     db.session.commit()
+
     return jsonify({'message': 'Alojamiento creado', 'id': a.id_alojamiento}), 201
 
-# Edit property (solo proprietario)
+# Edit property (only from owner)
 @alojamientos_bp.route('/<int:id>', methods=['PUT'])
 @login_required
 def edit_alojamiento(id):
-    """
-    PUT /alojamientos/<id>
-    Modifica i campi di un alloggio esistente (solo se utente è proprietario).
-    """
     user_id = session['user_id']
     a = Alojamiento.query.get(id)
     if not a:
@@ -108,21 +98,22 @@ def edit_alojamiento(id):
         return jsonify({'msg': 'No autorizado'}), 403
 
     data = request.get_json()
-    for field in ['nombre', 'direccion', 'ciudad', 'estado_o_pais', 'descripcion', 'precio_noche', 'imagen_principal_ruta', 'link_map']:
+    # Aggiorno i campi ammessi (inclusi i nuovi link)
+    for field in [
+        'nombre', 'direccion', 'ciudad', 'estado_o_pais',
+        'descripcion', 'precio_noche', 'imagen_principal_ruta',
+        'link_map_embed', 'link_map_url'
+    ]:
         if field in data:
             setattr(a, field, data[field])
 
     db.session.commit()
     return jsonify({'message': 'Alojamiento actualizado'}), 200
 
-# Delete property (solo proprietario)
+# Delete property
 @alojamientos_bp.route('/<int:id>', methods=['DELETE'])
 @login_required
 def delete_alojamiento(id):
-    """
-    DELETE /alojamientos/<id>
-    Cancella l’alloggio (solo se utente è proprietario). Elimina in cascata prenotazioni, commenti, immagini.
-    """
     user_id = session['user_id']
     a = Alojamiento.query.get(id)
     if not a:
@@ -132,33 +123,24 @@ def delete_alojamiento(id):
         return jsonify({'error': 'No autorizado'}), 403
 
     try:
-        # 1. Elimina tutte le immagini collegate
         ImagenAlojamiento.query.filter_by(id_alojamiento=id).delete()
-        # 2. Elimina tutti i commenti collegati
         Comentario.query.filter_by(id_alojamiento=id).delete()
-        # 3. Elimina tutte le prenotazioni collegate
         Reserva.query.filter_by(id_alojamiento=id).delete()
-        # 4. Elimina l’alloggio stesso
         db.session.delete(a)
         db.session.commit()
         return jsonify({'message': 'Alojamiento eliminado correctamente'}), 200
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f'Error deleting property: {e}')
+        current_app.logger.error(f'Error deleting property: {str(e)}')
         return jsonify({'error': 'Error al eliminar el alojamiento'}), 500
 
 def allowed_aloj_file(filename):
     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
     return ext in current_app.config.get('ALLOWED_IMAGE_EXTENSIONS', set())
 
-# Upload immagine principale per l’alloggio
 @alojamientos_bp.route('/upload-image', methods=['POST'])
 def upload_alojamiento_image():
-    """
-    POST /alojamientos/upload-image
-    Riceve multipart/form-data con campo 'image'.
-    Salva immagine su disco e restituisce percorso relativo JSON.
-    """
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Autenticazione richiesta'}), 401
@@ -197,14 +179,9 @@ def upload_alojamiento_image():
     rel_path = f"/static/uploads/alojamientos_img/{filename}"
     return jsonify({'imagen_principal_ruta': rel_path}), 200
 
-# GET → lista degli alloggi dell’owner loggato
 @alojamientos_bp.route('/owner', methods=['GET'])
 @login_required
 def get_owner_alojamientos():
-    """
-    GET /alojamientos/owner
-    Restituisce la lista degli alloggi creati dall’utente corrente.
-    """
     user_id = session['user_id']
     alojamientos = Alojamiento.query.filter_by(id_propietario=user_id).all()
 
@@ -215,72 +192,8 @@ def get_owner_alojamientos():
             'nombre': a.nombre,
             'ciudad': a.ciudad,
             'precio_noche': float(a.precio_noche),
-            'imagen_principal_ruta': a.imagen_principal_ruta
+            'imagen_principal_ruta': a.imagen_principal_ruta,
+            'link_map_embed': a.link_map_embed,
+            'link_map_url': a.link_map_url
         })
     return jsonify(result), 200
-
-# ===========================================
-# === ENDPOINTS PER I COMMENTI ==============
-# ===========================================
-
-@alojamientos_bp.route('/<int:id>/comments', methods=['GET'])
-def get_comments(id):
-    """
-    GET /alojamientos/<id>/comments
-    Restituisce i commenti associati a un alloggio (anche utenti non loggati).
-    Ogni commento include nome e cognome dell’utente che l’ha lasciato.
-    """
-    # Verifica esistenza alloggio
-    alojamiento = Alojamiento.query.get(id)
-    if not alojamiento:
-        return jsonify({'error': 'Alojamiento no encontrado'}), 404
-
-    comments = Comentario.query.filter_by(id_alojamiento=id).order_by(Comentario.fecha_comentario.desc()).all()
-    result = []
-    for c in comments:
-        user = Usuario.query.get(c.id_usuario)
-        result.append({
-            'id_comentario': c.id_comentario,
-            'id_usuario': c.id_usuario,
-            'nombre_usuario': user.nombre if user else '',
-            'apellidos_usuario': user.apellidos if user else '',
-            'texto': c.texto,
-            'puntuacion': c.puntuacion,
-            'fecha_comentario': c.fecha_comentario.isoformat()
-        })
-    return jsonify(result), 200
-
-@alojamientos_bp.route('/<int:id>/comments', methods=['POST'])
-@login_required
-def post_comment(id):
-    """
-    POST /alojamientos/<id>/comments
-    Richiede utente loggato. Aggiunge un commento all’alloggio.
-    Body JSON: { "texto": "Testo del commento", "puntuacion": 4 (opzionale) }
-    """
-    user_id = session['user_id']
-    alojamiento = Alojamiento.query.get(id)
-    if not alojamiento:
-        return jsonify({'error': 'Alojamiento no encontrado'}), 404
-
-    data = request.get_json()
-    if not data or 'texto' not in data or not data['texto'].strip():
-        return jsonify({'error': 'El campo texto es obligatorio'}), 400
-
-    texto = data['texto'].strip()
-    puntuacion = data.get('puntuacion')
-    try:
-        puntuacion_val = int(puntuacion) if puntuacion is not None else None
-    except:
-        puntuacion_val = None
-
-    nuevo = Comentario(
-        id_usuario=user_id,
-        id_alojamiento=id,
-        texto=texto,
-        puntuacion=puntuacion_val
-    )
-    db.session.add(nuevo)
-    db.session.commit()
-
-    return jsonify({'message': 'Comentario agregado'}), 201

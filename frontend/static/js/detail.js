@@ -79,9 +79,34 @@ async function loadAlojamientoDetail(id) {
       <div class="property-info" style="margin-bottom:2rem;">
         <h3>Información</h3>
         <p><strong>Dirección:</strong> ${data.direccion}</p>
-        <p><strong>Precio por noche:</strong> € ${data.precio_noche.toFixed(2)}</p>
-        ${data.link_map ? `<p><strong>Ubicación en mapa:</strong> <a href="${data.link_map}" target="_blank">Ver en Google Maps</a></p>` : ''}
+        <p><strong>Precio por noche:</strong> € ${parseFloat(data.precio_noche).toFixed(2)}</p>
       </div>
+
+      <!-- 1) IFRAME Google Maps (se esiste link_map_embed) -->
+      ${data.link_map_embed ? `
+      <div id="mapContainer">
+        <iframe
+          width="100%"
+          height="400"
+          frameborder="0"
+          style="border:0"
+          src="${data.link_map_embed}"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+        <div style="text-align:center;">
+          <a id="mapShareBtn"
+             href="${data.link_map_url}"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="btn btn-outline"
+             style="display:inline-block; margin-top:0.5rem;">
+            Ver en Google Maps
+          </a>
+        </div>
+      </div>
+      ` : ''}
     `;
     mainContainer.innerHTML = html;
 
@@ -151,7 +176,9 @@ function renderComments(count) {
           <strong>${c.nombre_usuario} ${c.apellidos_usuario}</strong>
           ${estrellas ? `<span class="rating-stars">${estrellas}</span>` : ''}
         </p>
-        <p style="font-size: 0.875rem; color: var(--color-text-light); margin-bottom: 0.5rem;">${fecha}</p>
+        <p style="font-size: 0.875rem; color: var(--color-text-light); margin-bottom: 0.5rem;">
+          ${fecha}
+        </p>
         <p>${c.texto}</p>
       </div>
     `;
@@ -186,13 +213,13 @@ async function setupCommentForm(alojId) {
     const respUser = await apiGet('/auth/me');
     if (respUser.ok) {
       currentUser = await respUser.json();
-      commentBtn.disabled = false;
-      // Se l’utente clicca senza aver scritto nulla, non pubblico
+      commentBtn.disabled = true;
+      // Abilito il pulsante solo quando c’è testo
       textArea.addEventListener('input', () => {
         commentBtn.disabled = textArea.value.trim().length === 0;
       });
     } else {
-      // Utente non loggato: disabilito il bottone e mostro tooltip
+      // Utente non loggato: disabilito il bottone e mostro alert al click
       currentUser = null;
       commentBtn.disabled = true;
       commentBtn.addEventListener('click', () => {
@@ -203,6 +230,9 @@ async function setupCommentForm(alojId) {
     console.error('Error checking login state:', err);
     currentUser = null;
     commentBtn.disabled = true;
+    commentBtn.addEventListener('click', () => {
+      showAlert('Debes iniciar sesión para publicar un comentario.', 'warning');
+    });
   }
 
   // Se l’utente è loggato, invio POST /api/alojamientos/<id>/comments
@@ -234,6 +264,7 @@ async function setupCommentForm(alojId) {
       showAlert('Comentario publicado correctamente', 'success');
       textArea.value = '';
       ratingSel.value = '';
+      commentBtn.disabled = true;
       // Ricarico i commenti
       await loadComments(alojId);
     } catch (error) {
@@ -305,7 +336,7 @@ function setupBookingForm(alojId) {
   startDateInput.addEventListener('change', () => {
     const sd = new Date(startDateInput.value);
     const minDate = new Date(today);
-    if (sd < minDate) {
+    if (sd < minDate || isNaN(sd.getTime())) {
       startDateInput.value = today;
     }
     updateEndDateAndPrice();

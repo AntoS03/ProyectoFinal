@@ -12,7 +12,6 @@ class Usuario(db.Model):
     fecha_registro = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     imagen_perfil_ruta = db.Column(db.String(512), nullable=True)
 
-    # Relazioni
     reservas = db.relationship('Reserva', backref='usuario', lazy=True)
     comentarios = db.relationship('Comentario', backref='usuario', lazy=True)
 
@@ -28,7 +27,10 @@ class Alojamiento(db.Model):
     descripcion = db.Column(db.Text, nullable=False)
     precio_noche = db.Column(db.Numeric(10,2), nullable=False)
     imagen_principal_ruta = db.Column(db.String(512), nullable=True)
-    link_map = db.Column(db.String(400), nullable=True)
+
+    # **Due nuovi campi:**
+    link_map_embed = db.Column(db.String(512), nullable=True)
+    link_map_url   = db.Column(db.String(512), nullable=True)
 
     # Relazioni
     reservas = db.relationship('Reserva', backref='alojamiento', lazy=True, cascade="all, delete-orphan")
@@ -44,11 +46,7 @@ class Reserva(db.Model):
     fecha_inicio = db.Column(db.Date, nullable=False)
     fecha_fin = db.Column(db.Date, nullable=False)
     fecha_reserva_creada = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    estado_reserva = db.Column(
-        db.Enum('Pendiente', 'Confirmada', 'Cancelada', 'Pagado'),
-        nullable=False,
-        default='Pendiente'
-    )
+    estado_reserva = db.Column(db.Enum('Pendiente', 'Confirmada', 'Cancelada', 'Pagado'), nullable=False, default='Pendiente')
 
 class Comentario(db.Model):
     __tablename__ = 'Comentarios'
@@ -57,7 +55,7 @@ class Comentario(db.Model):
     id_usuario = db.Column(db.Integer, db.ForeignKey('Usuarios.id_usuario'), nullable=False)
     id_alojamiento = db.Column(db.Integer, db.ForeignKey('Alojamientos.id_alojamiento'), nullable=False)
     texto = db.Column(db.Text, nullable=False)
-    puntuacion = db.Column(db.SmallInteger, nullable=True)  # potenzialmente 1–5 stelle
+    puntuacion = db.Column(db.SmallInteger, nullable=True)
     fecha_comentario = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
 class ImagenAlojamiento(db.Model):

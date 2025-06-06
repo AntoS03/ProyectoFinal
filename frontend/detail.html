@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,37 +14,52 @@
       gap: 2rem;
       margin-top: 2rem;
     }
+
     .detail-main {
       flex: 2;
     }
+
     .detail-sidebar {
       flex: 1;
       max-width: 350px;
     }
+
     .comment-form textarea {
       width: 100%;
       min-height: 80px;
       resize: vertical;
     }
+
     .comment-form button:disabled {
       background-color: var(--color-text-light);
       cursor: not-allowed;
     }
+
     .comment-item {
       border-bottom: 1px solid #ddd;
       padding: 1rem 0;
     }
+
     .rating-stars {
       color: var(--color-accent);
     }
+
+    #mapContainer {
+      margin-top: 1.5rem;
+    }
+
+    #mapShareBtn {
+      margin-top: 0.75rem;
+    }
   </style>
 </head>
+
 <body>
   <header>
     <div class="container header-container">
       <a href="index.html" class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
@@ -51,8 +67,8 @@
       </a>
 
       <button id="mobileMenuBtn" class="mobile-menu-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -75,20 +91,21 @@
 
   <main class="container">
     <div id="breadcrumbs" class="breadcrumbs" style="margin-top: 1rem;">
-      <!-- Breadcrumbs generate da JS, es.: <a href="search.html">Buscar</a> <span>&gt;</span> <span class="current">Nombre Alojamiento</span> -->
+      <!-- Breadcrumbs generate da JS, es.: 
+           <a href="search.html">Buscar</a> <span>&gt;</span> <span class="current">Nombre Alojamiento</span> -->
     </div>
 
     <div class="detail-container">
-      <!-- Lato sinistro: immagini + descrizione -->
+      <!-- Lato sinistro: immagini + descrizione + iframe mappa -->
       <div class="detail-main" id="detailMain">
-        <!-- Contenuto generate da detail.js -->
+        <!-- Contenuto generato da detail.js -->
         <p>Cargando detalle...</p>
       </div>
 
       <!-- Lato destro: prenotazione + commenti -->
       <aside class="detail-sidebar">
         <div id="bookingSection">
-          <!-- Form di prenotazione generate da detail.js -->
+          <!-- Form di prenotazione generato da detail.js -->
         </div>
 
         <hr style="margin: 2rem 0;" />
@@ -96,7 +113,7 @@
         <div id="commentsSection">
           <h3>Comentarios</h3>
           <div id="commentsList">
-            <!-- Lista commenti generate da detail.js -->
+            <!-- Lista commenti generata da detail.js -->
             <p>Cargando comentarios...</p>
           </div>
 
@@ -132,4 +149,5 @@
   <script src="static/js/fetch-api.js"></script>
   <script src="static/js/detail.js"></script>
 </body>
+
 </html>
