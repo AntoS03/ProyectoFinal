@@ -356,20 +356,26 @@ footer {
   width: 100%;
 }
 
+/* Bottone “spento” quando disabled per commenti */
+.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Forms */
 
 .profile-form .form-group {
-    margin-bottom: 1.2rem;
+  margin-bottom: 1.2rem;
 }
 
 .profile-form .form-control {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
 }
 
 /* Bottone reset immagine */
 #resetImageBtn {
-    margin-top: 10px;
+  margin-top: 10px;
 }
 
 .form-group {
@@ -644,7 +650,6 @@ footer {
   font-weight: 600;
 }
 
-/*Updates*/
 /* Nel caso il modulo di creazione occupi troppo spazio, puoi limitare la larghezza: */
 #formAddAlojModal .auth-container {
   max-width: 700px;
