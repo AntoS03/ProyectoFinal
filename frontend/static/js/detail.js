@@ -1,313 +1,334 @@
 /**
- * Detail page script
- * Handles property detail view and booking
+ * detail.js
+ * Gestisce caricamento dettagli alloggio, commenti e booking interattivo.
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check authentication and update navigation
+  // 1) Aggiorna navbar (mostra Mi Perfil / logout se autenticato)
   await updateNavigation();
 
-  // Get property ID from URL
+  // 2) Prendo l’ID dell’alloggio dalla query string
   const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
-
-  if (!id) {
-    showAlert('Alojamiento no encontrado. ID no especificado.', 'error');
+  const alojId = params.get('id');
+  if (!alojId) {
+    showAlert('Alojamiento no encontrado (ID mancante)', 'error');
     return;
   }
 
-  // Load property details
-  loadPropertyDetail(id);
+  // 3) Carico e mostro i dettagli dell’alloggio
+  await loadPropertyDetail(alojId);
 
-  // Setup mobile menu toggle
+  // 4) Carico i commenti esistenti
+  await loadComments(alojId);
+
+  // 5) Metto in piedi il carousel commenti (← e →)
+  setupCommentsCarousel();
+
+  // 6) Controllo se l’utente è loggato e, in caso affermativo, mostro il form per lasciare commento
+  await setupAddComment(alojId);
+
+  // 7) Inizializzo la logica di booking interattivo
+  initializeBookingWidget(alojId);
+
+  // Mobile menu toggle
   const menuBtn = document.getElementById('mobileMenuBtn');
   const navMenu = document.getElementById('navMenu');
-  
   if (menuBtn && navMenu) {
-    menuBtn.addEventListener('click', () => {
-      navMenu.classList.toggle('active');
-    });
-  }
-
-  // Set active navigation item
-  setActiveNavItem();
-
-  // Setup booking form submission
-  const bookingForm = document.getElementById('bookingForm');
-  if (bookingForm) {
-    bookingForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      createReservation(id);
-    });
+    menuBtn.addEventListener('click', () => navMenu.classList.toggle('active'));
   }
 });
 
+
 /**
- * Load property detail
- * @param {string} id - Property ID
+ * Carica dettagli dell’alloggio e costruisce l’HTML corrispondente.
  */
 async function loadPropertyDetail(id) {
-  const detailContainer = document.getElementById('propertyDetail');
-  if (!detailContainer) return;
-
-  showSpinner('propertyDetail', true);
+  const container = document.getElementById('propertyDetail');
+  container.innerHTML = '<p>Cargando detalles...</p>';
 
   try {
-    const response = await apiGet(`/alojamientos/${id}`);
-    
-    if (response.ok) {
-      const property = await response.json();
-      renderPropertyDetail(property);
-      document.title = `${property.nombre} - Best Booking`;
-      
-      // Check if user is authenticated to show booking form
-      const isLoggedIn = await checkAuth();
-      toggleBookingForm(isLoggedIn);
-    } else {
-      if (response.status === 404) {
-        showAlert('Alojamiento no encontrado.', 'error');
-      } else {
-        showAlert('Error al cargar los detalles del alojamiento.', 'error');
-      }
+    const resp = await apiGet(`/alojamientos/${id}`);
+    if (!resp.ok) {
+      showAlert('Error al cargar detalles del alojamiento', 'error');
+      container.innerHTML = `<p class="text-center">Alojamiento no encontrado.</p>`;
+      return;
     }
-  } catch (error) {
-    console.error('Error:', error);
-    showAlert('Error al cargar los detalles del alojamiento.', 'error');
-  } finally {
-    hideSpinner('propertyDetail');
-  }
-}
+    const a = await resp.json();
 
-/**
- * Render property detail
- * @param {Object} property - Property object
- */
-function renderPropertyDetail(property) {
-  const container = document.getElementById('propertyDetail');
-  if (!container) return;
+    // Immagine principale (o placeholder se manca)
+    const mainImg = a.imagen_principal_ruta || 'https://via.placeholder.com/600x400?text=Sin+Imagen';
 
-  // Build breadcrumbs
-  const breadcrumbs = `
-    <div class="breadcrumbs">
-      <a href="index.html">Inicio</a>
-      <span>></span>
-      <a href="search.html">Buscar</a>
-      <span>></span>
-      <span class="current">${property.nombre}</span>
-    </div>
-  `;
-
-  // Build map if link exists
-  const mapHTML = property.link_map ? `
-    <div class="property-map">
-      <iframe src="${property.link_map}" allowfullscreen></iframe>
-    </div>
-  ` : '';
-
-  container.innerHTML = `
-    ${breadcrumbs}
-    <div class="property-detail">
-      <div class="property-header">
-        <h1 class="property-title">${property.nombre}</h1>
-        <div class="property-location">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          ${property.direccion}, ${property.ciudad}, ${property.estado_o_pais}
+    // Costruisco l’HTML
+    container.innerHTML = `
+      <div class="detail-images">
+        <img src="${mainImg}" alt="Imagen de ${a.nombre}" id="mainAlojImage" />
+      </div>
+      <div class="detail-info">
+        <div>
+          <h1 class="detail-title">${a.nombre}</h1>
+          <div class="detail-location">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            ${a.direccion}, ${a.ciudad} ${a.estado_o_pais || ''}
+          </div>
+          <div class="detail-price">${formatPrice(a.precio_noche)} / noche</div>
         </div>
-      </div>
-      
-      <div class="property-image">
-        <img src="${property.imagen_principal_ruta || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg'}" 
-             alt="Imagen principal de ${property.nombre}" />
-      </div>
-      
-      <div class="property-content">
-        <div class="property-info">
-          <div class="property-price">${formatPrice(property.precio_noche)} / noche</div>
-          <div class="property-description">${property.descripcion}</div>
+
+        <div class="detail-description">
+          <h3>Descripción</h3>
+          <p>${a.descripcion}</p>
         </div>
-        
-        ${mapHTML}
-      </div>
-    </div>
-  `;
 
-  // Store property ID for booking
-  if (document.getElementById('bookingForm')) {
-    document.getElementById('bookingForm').dataset.propertyId = property.id;
-  }
-}
-
-/**
- * Toggle booking form based on authentication status
- * @param {boolean} isLoggedIn - Whether user is logged in
- */
-function toggleBookingForm(isLoggedIn) {
-  const bookingContainer = document.getElementById('bookingContainer');
-  if (!bookingContainer) return;
-
-  if (isLoggedIn) {
-    bookingContainer.innerHTML = `
-      <div class="booking-form">
-        <h2>Reservar este alojamiento</h2>
-        <form id="bookingForm">
-          <div class="booking-dates">
-            <div class="booking-date">
-              <div class="form-group">
-                <label for="fechaInicio" class="form-label">Fecha de llegada</label>
-                <input type="date" id="fechaInicio" class="form-control" required>
-                <div id="fechaInicioError" class="invalid-feedback"></div>
-              </div>
+        <div class="booking-widget" id="bookingWidget">
+          <h3>Reservar este alojamiento</h3>
+          <div class="booking-row">
+            <div class="booking-field">
+              <label for="fechaInicio">Fecha de llegada *</label>
+              <input type="date" id="fechaInicio" required />
             </div>
-            <div class="booking-date">
-              <div class="form-group">
-                <label for="fechaFin" class="form-label">Fecha de salida</label>
-                <input type="date" id="fechaFin" class="form-control" required>
-                <div id="fechaFinError" class="invalid-feedback"></div>
+            <div class="booking-field">
+              <label for="fechaFin">Fecha de salida *</label>
+              <input type="date" id="fechaFin" required />
+            </div>
+            <div class="booking-field">
+              <label>N° Noches</label>
+              <div class="nights-counter">
+                <button type="button" id="decNights">−</button>
+                <span id="numNights">1</span>
+                <button type="button" id="incNights">+</button>
               </div>
             </div>
           </div>
-          <button type="submit" id="bookBtn" class="btn btn-primary btn-block">Reservar ahora</button>
-        </form>
+          <button class="btn btn-primary book-submit" id="bookBtn">Reservar ahora</button>
+        </div>
       </div>
     `;
 
-    // Set min date for date inputs (today)
+    // Imposto datepicker: oggi e domani come default, con min=oggi
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('fechaInicio').min = today;
-    document.getElementById('fechaFin').min = today;
+    const tomorrow = new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0];
 
-    // Add event listener to validate dates
-    document.getElementById('fechaInicio').addEventListener('change', validateDates);
-    document.getElementById('fechaFin').addEventListener('change', validateDates);
+    const startInput = document.getElementById('fechaInicio');
+    const endInput   = document.getElementById('fechaFin');
 
-    // Setup booking form submission
-    const bookingForm = document.getElementById('bookingForm');
-    if (bookingForm) {
-      bookingForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (validateDates()) {
-          createReservation();
-        }
-      });
-    }
-  } else {
-    bookingContainer.innerHTML = `
-      <div class="booking-form">
-        <p>Para reservar debes <a href="login.html">iniciar sesión</a>.</p>
-      </div>
-    `;
+    startInput.value = today;
+    startInput.min   = today;
+
+    endInput.value = tomorrow;
+    endInput.min   = tomorrow;
+
+  } catch (err) {
+    console.error('Error loadPropertyDetail:', err);
+    container.innerHTML = `<p class="text-center">Error de red al cargar detalles.</p>`;
   }
 }
 
-/**
- * Validate booking dates
- * @returns {boolean} - Whether dates are valid
- */
-function validateDates() {
-  const fechaInicio = document.getElementById('fechaInicio');
-  const fechaFin = document.getElementById('fechaFin');
-  const fechaInicioError = document.getElementById('fechaInicioError');
-  const fechaFinError = document.getElementById('fechaFinError');
-  
-  let isValid = true;
-
-  // Reset errors
-  fechaInicioError.textContent = '';
-  fechaFinError.textContent = '';
-  fechaInicio.classList.remove('is-invalid');
-  fechaFin.classList.remove('is-invalid');
-
-  // Check if dates are selected
-  if (!fechaInicio.value) {
-    fechaInicioError.textContent = 'Selecciona una fecha de llegada';
-    fechaInicio.classList.add('is-invalid');
-    isValid = false;
-  }
-
-  if (!fechaFin.value) {
-    fechaFinError.textContent = 'Selecciona una fecha de salida';
-    fechaFin.classList.add('is-invalid');
-    isValid = false;
-  }
-
-  // Check if end date is after start date
-  if (fechaInicio.value && fechaFin.value) {
-    const start = new Date(fechaInicio.value);
-    const end = new Date(fechaFin.value);
-    
-    if (end <= start) {
-      fechaFinError.textContent = 'La fecha de salida debe ser posterior a la fecha de llegada';
-      fechaFin.classList.add('is-invalid');
-      isValid = false;
-    }
-  }
-
-  return isValid;
-}
 
 /**
- * Create a reservation
+ * Carica i commenti esistenti (GET /alojamientos/:id/comentarios)
  */
-async function createReservation() {
-  if (!validateDates()) return;
-
-  const propertyId = parseInt(new URLSearchParams(window.location.search).get('id'));
-  const fechaInicio = document.getElementById('fechaInicio').value;
-  const fechaFin = document.getElementById('fechaFin').value;
-  const bookBtn = document.getElementById('bookBtn');
-
-  // Disable button and show loading
-  bookBtn.disabled = true;
-  bookBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+async function loadComments(alojId) {
+  const carousel = document.getElementById('commentsCarousel');
+  carousel.innerHTML = '<p>Cargando comentarios...</p>';
 
   try {
-    const response = await apiPost('/reservas/', {
-      id_alojamiento: propertyId,
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      showAlert(`Reserva creada correctamente (ID: ${data.id})`, 'success');
-      
-      // Reset form
-      document.getElementById('fechaInicio').value = '';
-      document.getElementById('fechaFin').value = '';
-    } else {
-      const error = await response.json();
-      
-      if (response.status === 409) {
-        showAlert('Fechas no disponibles. Por favor, elige otras fechas.', 'error');
-      } else if (response.status === 401) {
-        showAlert('Debes iniciar sesión para reservar.', 'error');
-        window.location.href = 'login.html';
-      } else {
-        showAlert(error.error || 'Error al crear la reserva.', 'error');
-      }
+    const resp = await apiGet(`/alojamientos/${alojId}/comentarios`);
+    if (!resp.ok) {
+      carousel.innerHTML = `<p class="text-center">No se han encontrado comentarios.</p>`;
+      return;
     }
-  } catch (error) {
-    console.error('Error:', error);
-    showAlert('Error al crear la reserva.', 'error');
-  } finally {
-    // Re-enable button
-    bookBtn.disabled = false;
-    bookBtn.textContent = 'Reservar ahora';
+    const data = await resp.json();
+    if (data.length === 0) {
+      carousel.innerHTML = `<p class="text-center">Aun no hay comentarios. ¡Sé el primero!</p>`;
+      return;
+    }
+
+    // Costruisco ogni “card” commento
+    carousel.innerHTML = data.map(c => `
+      <div class="comment-card">
+        <div class="comment-header">
+          <span class="comment-author">${c.author_nombre} ${c.author_apellidos}</span>
+          <span class="comment-date">${c.date}</span>
+        </div>
+        <div class="comment-text">${c.texto}</div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error('Error loadComments:', err);
+    carousel.innerHTML = `<p class="text-center">Error al cargar comentarios.</p>`;
   }
 }
 
+
 /**
- * Set active navigation item based on current page
+ * Imposta i bottoni “←” e “→” per scorrere orizzontalmente i commenti
  */
-function setActiveNavItem() {
-  const navLinks = document.querySelectorAll('nav a');
-  
-  navLinks.forEach(link => {
-    if (link.getAttribute('href') === 'search.html') {
-      link.classList.add('active');
+function setupCommentsCarousel() {
+  const carousel = document.getElementById('commentsCarousel');
+  const prevBtn  = document.getElementById('prevComment');
+  const nextBtn  = document.getElementById('nextComment');
+  if (!carousel || !prevBtn || !nextBtn) return;
+
+  prevBtn.addEventListener('click', () => {
+    carousel.scrollBy({ left: -300, behavior: 'smooth' });
+  });
+  nextBtn.addEventListener('click', () => {
+    carousel.scrollBy({ left: 300, behavior: 'smooth' });
+  });
+}
+
+
+/**
+ * Se l’utente è loggato, mostra un form per aggiungere un commento.
+ * POST /alojamientos/:id/comentarios
+ */
+async function setupAddComment(alojId) {
+  try {
+    const resp = await apiGet('/auth/me');
+    if (!resp.ok) {
+      // Non loggato: non mostro niente
+      return;
+    }
+    // Utente autenticato: mostro il form
+    const user = await resp.json();
+    const container = document.getElementById('addCommentSection');
+    container.innerHTML = `
+      <h4>Deja tu comentario</h4>
+      <textarea id="newCommentText" rows="4" placeholder="Escribe algo..." ></textarea>
+      <button id="submitCommentBtn" class="btn btn-primary">Publicar Comentario</button>
+    `;
+
+    document.getElementById('submitCommentBtn').addEventListener('click', async () => {
+      const texto = document.getElementById('newCommentText').value.trim();
+      if (!texto) {
+        showAlert('Escribe un comentario antes de enviar', 'error');
+        return;
+      }
+      try {
+        const postResp = await apiPost(`/alojamientos/${alojId}/comentarios`, { texto });
+        if (postResp.ok) {
+          showAlert('Comentario publicado', 'success');
+          document.getElementById('newCommentText').value = '';
+          // Ricarico i commenti per mostrare subito il nuovo
+          await loadComments(alojId);
+        } else {
+          const errData = await postResp.json();
+          showAlert(errData.error || 'Error al publicar comentario', 'error');
+        }
+      } catch (err) {
+        console.error('Error posting comentario:', err);
+        showAlert('Error de red al publicar comentario', 'error');
+      }
+    });
+  } catch (err) {
+    console.error('setupAddComment error:', err);
+  }
+}
+
+
+/**
+ * Logica per il booking interattivo:
+ * - Datepicker con min=today per “fechaInicio” e “fechaFin”
+ * - Contatore notti che aggiorna la data di fine
+ * - POST /reservas
+ */
+function initializeBookingWidget(alojId) {
+  const startInput = document.getElementById('fechaInicio');
+  const endInput   = document.getElementById('fechaFin');
+  const decBtn     = document.getElementById('decNights');
+  const incBtn     = document.getElementById('incNights');
+  const nightsEl   = document.getElementById('numNights');
+  const bookBtn    = document.getElementById('bookBtn');
+
+  if (!startInput || !endInput || !decBtn || !incBtn || !nightsEl || !bookBtn) return;
+
+  // Calcola la differenza di notti fra le due date
+  function calculateNights() {
+    const d1 = new Date(startInput.value);
+    const d2 = new Date(endInput.value);
+    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }
+
+  // Quando cambia “fechaInicio”, aggiorno il min di “fechaFin”
+  startInput.addEventListener('change', () => {
+    const d1 = new Date(startInput.value);
+    const newMin = new Date(d1.getTime() + 24*60*60*1000);
+    endInput.min = newMin.toISOString().split('T')[0];
+
+    if (new Date(endInput.value) <= d1) {
+      endInput.value = newMin.toISOString().split('T')[0];
+    }
+    nightsEl.textContent = calculateNights();
+  });
+
+  // Quando cambia “fechaFin”, ricalcolo le notti
+  endInput.addEventListener('change', () => {
+    const num = calculateNights();
+    if (num < 1) {
+      // Se data fine non valida (≤ inizio), resetto a 1 notte
+      const d1 = new Date(startInput.value);
+      const d2 = new Date(d1.getTime() + 24*60*60*1000);
+      endInput.value = d2.toISOString().split('T')[0];
+      nightsEl.textContent = 1;
+    } else {
+      nightsEl.textContent = num;
+    }
+  });
+
+  // Pulsante “−” notte
+  decBtn.addEventListener('click', () => {
+    let num = parseInt(nightsEl.textContent);
+    if (num <= 1) return;
+    num--;
+    nightsEl.textContent = num;
+
+    const d1 = new Date(startInput.value);
+    const newEnd = new Date(d1.getTime() + num * 24*60*60*1000);
+    endInput.value = newEnd.toISOString().split('T')[0];
+  });
+
+  // Pulsante “+” notte
+  incBtn.addEventListener('click', () => {
+    let num = parseInt(nightsEl.textContent) + 1;
+    nightsEl.textContent = num;
+
+    const d1 = new Date(startInput.value);
+    const newEnd = new Date(d1.getTime() + num * 24*60*60*1000);
+    endInput.value = newEnd.toISOString().split('T')[0];
+  });
+
+  // Inizializzo notti al caricamento
+  nightsEl.textContent = calculateNights();
+
+  // Bottone “Reservar ahora”
+  bookBtn.addEventListener('click', async () => {
+    const fechaInicio = startInput.value;
+    const fechaFin    = endInput.value;
+    if (!fechaInicio || !fechaFin) {
+      showAlert('Selecciona fechas válidas', 'error');
+      return;
+    }
+    const payload = {
+      id_alojamiento: parseInt(alojId),
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin
+    };
+    try {
+      const resp = await apiPost('/reservas', payload);
+      if (resp.ok) {
+        const data = await resp.json();
+        showAlert(`Reserva creada (ID: ${data.id})`, 'success');
+      } else {
+        const err = await resp.json();
+        showAlert(err.error || 'Error al crear reserva', 'error');
+      }
+    } catch (err) {
+      console.error('Error booking:', err);
+      showAlert('Error de red al crear reserva', 'error');
     }
   });
 }

@@ -2,7 +2,7 @@
 import os
 from flask import Blueprint, request, jsonify, session, current_app
 from extensions import db
-from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento
+from models import Alojamiento, Reserva, Comentario, ImagenAlojamiento, Usuario
 from sqlalchemy import and_
 from utils import login_required
 from werkzeug.utils import secure_filename
@@ -256,3 +256,74 @@ def get_owner_alojamientos():
             'imagen_principal_ruta': a.imagen_principal_ruta
         })
     return jsonify(result), 200
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# GET /alojamientos/<id>/comentarios
+# Restituisce tutti i commenti di quell’alloggio, con autore (nome+apellidos) aggiornati.
+# ───────────────────────────────────────────────────────────────────────────────
+@alojamientos_bp.route('/<int:id>/comentarios', methods=['GET'])
+def get_comentarios(id):
+    # Verifica esistenza dell’alloggio
+    a = Alojamiento.query.get(id)
+    if not a:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+
+    comentarios = Comentario.query.filter_by(id_alojamiento=id).order_by(Comentario.fecha_comentario.desc()).all()
+    result = []
+    for c in comentarios:
+        user = Usuario.query.get(c.id_usuario)
+        # Se per qualche motivo l’utente non esiste (dovrebbe però sempre esistere),
+        # usiamo stringhe vuote o “Usuario Eliminado”
+        author_nombre    = user.nombre or ''
+        author_apellidos = user.apellidos or ''
+        result.append({
+            'id_comentario': c.id_comentario,
+            'author_id': user.id_usuario,
+            'author_nombre': author_nombre,
+            'author_apellidos': author_apellidos,
+            'date': c.fecha_comentario.strftime('%Y-%m-%d'),
+            'texto': c.texto,
+            'puntuacion': c.puntuacion if c.puntuacion is not None else None
+        })
+    return jsonify(result), 200
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# POST /alojamientos/<id>/comentarios
+# Consente a un utente loggato di aggiungere un commento.
+# ───────────────────────────────────────────────────────────────────────────────
+@alojamientos_bp.route('/<int:id>/comentarios', methods=['POST'])
+@login_required
+def post_comentario(id):
+    # id = id dell’alloggio a cui aggiungere il commento
+    data = request.get_json()
+    user_id = session.get('user_id')
+
+    # Verifica esistenza dell’alloggio
+    alojamiento = Alojamiento.query.get(id)
+    if not alojamiento:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+
+    # Controllo campo obbligatorio “texto”
+    if not data or 'texto' not in data or not data['texto'].strip():
+        return jsonify({'error': 'El campo "texto" es obligatorio'}), 400
+
+    texto = data['texto'].strip()
+    puntuacion = data.get('puntuacion')  # Puoi estendere se vuoi gestire voti/stelle
+
+    # Creo il nuovo commento
+    nuevo = Comentario(
+        id_usuario=user_id,
+        id_alojamiento=id,
+        texto=texto,
+        puntuacion=puntuacion
+    )
+    db.session.add(nuevo)
+    db.session.commit()
+
+    # Ritorno un po’ di info base (eventualmente l’ID)  
+    return jsonify({
+        'message': 'Comentario creado',
+        'id_comentario': nuevo.id_comentario
+    }), 201
