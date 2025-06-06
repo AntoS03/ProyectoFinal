@@ -197,3 +197,70 @@ def get_owner_alojamientos():
             'link_map_url': a.link_map_url
         })
     return jsonify(result), 200
+
+
+# ===========================================
+# === ENDPOINTS PER I COMMENTI ==============
+# ===========================================
+
+@alojamientos_bp.route('/<int:id>/comments', methods=['GET'])
+def get_comments(id):
+    """
+    GET /alojamientos/<id>/comments
+    Restituisce i commenti associati a un alloggio (anche utenti non loggati).
+    Ogni commento include nome e cognome dell’utente che l’ha lasciato.
+    """
+    # Verifica esistenza alloggio
+    alojamiento = Alojamiento.query.get(id)
+    if not alojamiento:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+
+    comments = Comentario.query.filter_by(id_alojamiento=id).order_by(Comentario.fecha_comentario.desc()).all()
+    result = []
+    for c in comments:
+        user = Usuario.query.get(c.id_usuario)
+        result.append({
+            'id_comentario': c.id_comentario,
+            'id_usuario': c.id_usuario,
+            'nombre_usuario': user.nombre if user else '',
+            'apellidos_usuario': user.apellidos if user else '',
+            'texto': c.texto,
+            'puntuacion': c.puntuacion,
+            'fecha_comentario': c.fecha_comentario.isoformat()
+        })
+    return jsonify(result), 200
+
+@alojamientos_bp.route('/<int:id>/comments', methods=['POST'])
+@login_required
+def post_comment(id):
+    """
+    POST /alojamientos/<id>/comments
+    Richiede utente loggato. Aggiunge un commento all’alloggio.
+    Body JSON: { "texto": "Testo del commento", "puntuacion": 4 (opzionale) }
+    """
+    user_id = session['user_id']
+    alojamiento = Alojamiento.query.get(id)
+    if not alojamiento:
+        return jsonify({'error': 'Alojamiento no encontrado'}), 404
+
+    data = request.get_json()
+    if not data or 'texto' not in data or not data['texto'].strip():
+        return jsonify({'error': 'El campo texto es obligatorio'}), 400
+
+    texto = data['texto'].strip()
+    puntuacion = data.get('puntuacion')
+    try:
+        puntuacion_val = int(puntuacion) if puntuacion is not None else None
+    except:
+        puntuacion_val = None
+
+    nuevo = Comentario(
+        id_usuario=user_id,
+        id_alojamiento=id,
+        texto=texto,
+        puntuacion=puntuacion_val
+    )
+    db.session.add(nuevo)
+    db.session.commit()
+
+    return jsonify({'message': 'Comentario agregado'}), 201
