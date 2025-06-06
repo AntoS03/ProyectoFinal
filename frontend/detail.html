@@ -1,109 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalle del Alojamiento - BookingApp</title>
-  <link rel="stylesheet" href="static/css/main.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detalle Alojamiento - BookingApp</title>
+  <link rel="stylesheet" href="static/css/main.css" />
   <style>
-    /* Stilizzazione base per la pagina detail */
-    .property-detail {
-      background-color: white;
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      margin-bottom: calc(var(--spacing) * 4);
-    }
-    .property-header {
-      padding: calc(var(--spacing) * 3);
-    }
-    .property-title {
-      margin-bottom: var(--spacing);
-      color: var(--color-primary);
-      font-size: 2rem;
-    }
-    .property-location {
-      color: var(--color-text-light);
+    /* Eventuali stili specifici per detail.html */
+    .detail-container {
       display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: calc(var(--spacing) * 2);
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin-top: 2rem;
     }
-    .property-image {
-      height: 400px;
-      overflow: hidden;
+    .detail-main {
+      flex: 2;
     }
-    .property-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .property-content {
-      padding: calc(var(--spacing) * 3);
-    }
-    .property-price {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: var(--color-accent);
-      margin-bottom: calc(var(--spacing) * 2);
-    }
-    .property-description {
-      line-height: 1.7;
-      margin-bottom: calc(var(--spacing) * 3);
-    }
-    .property-map {
-      margin-top: calc(var(--spacing) * 3);
-      height: 300px;
-      border-radius: var(--border-radius);
-      overflow: hidden;
-    }
-    .property-map iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    /* Booking form */
-    .booking-form {
-      background-color: var(--color-bg-alt);
-      padding: calc(var(--spacing) * 3);
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-      margin-bottom: calc(var(--spacing) * 4);
-    }
-    .booking-dates {
-      display: flex;
-      gap: calc(var(--spacing) * 2);
-      margin-bottom: calc(var(--spacing) * 3);
-    }
-    .booking-date {
+    .detail-sidebar {
       flex: 1;
+      max-width: 350px;
     }
-
-    /* Sezione commenti */
-    .comment-section {
-      background-color: white;
-      border-radius: var(--border-radius);
-      padding: calc(var(--spacing) * 3);
-      box-shadow: var(--shadow);
-      margin-bottom: calc(var(--spacing) * 4);
-    }
-    .comment-card {
-      margin-bottom: calc(var(--spacing) * 2);
-    }
-    .leave-comment textarea {
+    .comment-form textarea {
+      width: 100%;
+      min-height: 80px;
       resize: vertical;
+    }
+    .comment-form button:disabled {
+      background-color: var(--color-text-light);
+      cursor: not-allowed;
+    }
+    .comment-item {
+      border-bottom: 1px solid #ddd;
+      padding: 1rem 0;
+    }
+    .rating-stars {
+      color: var(--color-accent);
     }
   </style>
 </head>
-
 <body>
   <header>
     <div class="container header-container">
       <a href="index.html" class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
@@ -111,8 +51,8 @@
       </a>
 
       <button id="mobileMenuBtn" class="mobile-menu-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -123,7 +63,9 @@
         <ul>
           <li><a href="index.html">Inicio</a></li>
           <li><a href="search.html">Buscar</a></li>
-          <li id="authLinks"></li>
+          <li id="authLinks">
+            <!-- Qui verranno inseriti i link "Iniciar Sesión" / "Registrarse" oppure "Mi Perfil" / "Cerrar sesión" -->
+          </li>
         </ul>
       </nav>
     </div>
@@ -132,71 +74,52 @@
   <div id="alertContainer"></div>
 
   <main class="container">
-    <!-- ========================================= -->
-    <!-- ====== Dettaglio Alojamiento =========== -->
-    <!-- ========================================= -->
-    <div id="propertyDetail" class="property-detail">
-      <!-- Sarà popolato dinamicamente da detail.js -->
-      <p class="text-center" style="padding:2rem;">Cargando detalles del alojamiento...</p>
+    <div id="breadcrumbs" class="breadcrumbs" style="margin-top: 1rem;">
+      <!-- Breadcrumbs generate da JS, es.: <a href="search.html">Buscar</a> <span>&gt;</span> <span class="current">Nombre Alojamiento</span> -->
     </div>
 
-    <!-- ========================================= -->
-    <!-- ====== Modulo Prenotazione ============== -->
-    <!-- ========================================= -->
-    <div id="bookingContainer" class="booking-form">
-      <h2>Reservar este alojamiento</h2>
-      <form id="bookingForm">
-        <div class="booking-dates">
-          <div class="booking-date">
-            <div class="form-group">
-              <label for="fechaInicio" class="form-label">Fecha de llegada</label>
-              <input type="date" id="fechaInicio" class="form-control" required>
-              <div id="fechaInicioError" class="invalid-feedback"></div>
-            </div>
-          </div>
-          <div class="booking-date">
-            <div class="form-group">
-              <label for="fechaFin" class="form-label">Fecha de salida</label>
-              <input type="date" id="fechaFin" class="form-control" required>
-              <div id="fechaFinError" class="invalid-feedback"></div>
-            </div>
-          </div>
+    <div class="detail-container">
+      <!-- Lato sinistro: immagini + descrizione -->
+      <div class="detail-main" id="detailMain">
+        <!-- Contenuto generate da detail.js -->
+        <p>Cargando detalle...</p>
+      </div>
+
+      <!-- Lato destro: prenotazione + commenti -->
+      <aside class="detail-sidebar">
+        <div id="bookingSection">
+          <!-- Form di prenotazione generate da detail.js -->
         </div>
 
-        <!-- Prezzo totale mostrato dinamicamente -->
-        <p id="totalPriceDisplay" style="font-weight:bold; margin-top:1rem;">
-          Precio total: € 0.00
-        </p>
+        <hr style="margin: 2rem 0;" />
 
-        <button type="submit" id="bookBtn" class="btn btn-primary btn-block">
-          Reservar ahora
-        </button>
-      </form>
-    </div>
+        <div id="commentsSection">
+          <h3>Comentarios</h3>
+          <div id="commentsList">
+            <!-- Lista commenti generate da detail.js -->
+            <p>Cargando comentarios...</p>
+          </div>
 
-    <!-- ========================================= -->
-    <!-- ====== Sezione Commenti ================= -->
-    <!-- ========================================= -->
-    <div class="comment-section">
-      <h3>Recensioni</h3>
-
-      <!-- Container per la lista dei commenti -->
-      <div id="commentsContainer">
-        <p class="text-center">Cargando comentarios...</p>
-      </div>
-
-      <!-- Sezione "Lascia un commento" sempre visibile -->
-      <div class="leave-comment" style="margin-top:2rem;">
-        <h4>Lascia la tua recensione</h4>
-        <textarea id="commentTextarea" class="form-control" rows="4" placeholder="Scrivi qui il tuo commento..."></textarea>
-        <button id="submitCommentBtn" class="btn btn-primary btn-disabled" disabled
-                style="margin-top:0.5rem;">
-          Publicar comentario
-        </button>
-        <p id="commentLoginHint" class="text-muted" style="font-size:0.9rem; margin-top:0.5rem;">
-          Debes <a href="login.html">iniciar sesión</a> para publicar una reseña.
-        </p>
-      </div>
+          <!-- Form per inserire nuovo commento -->
+          <div class="comment-form" style="margin-top: 1.5rem;">
+            <textarea id="newCommentText" placeholder="Escribe tu comentario aquí..." maxlength="500"></textarea>
+            <div style="display: flex; align-items: center; margin-top: 0.5rem;">
+              <label for="newCommentRating" style="margin-right: 0.5rem;">Puntuación:</label>
+              <select id="newCommentRating">
+                <option value="">—</option>
+                <option value="1">1 estrella</option>
+                <option value="2">2 estrellas</option>
+                <option value="3">3 estrellas</option>
+                <option value="4">4 estrellas</option>
+                <option value="5">5 estrellas</option>
+              </select>
+            </div>
+            <button id="postCommentBtn" class="btn btn-primary" style="margin-top: 0.75rem;" disabled>
+              Publicar comentario
+            </button>
+          </div>
+        </div>
+      </aside>
     </div>
   </main>
 
@@ -209,5 +132,4 @@
   <script src="static/js/fetch-api.js"></script>
   <script src="static/js/detail.js"></script>
 </body>
-
 </html>
