@@ -1,11 +1,10 @@
 /**
-* Profile page script
-* Gestisce il caricamento dati utente, prenotazioni, alojamientos e relative operazioni
-*/
+ * Profile page script
+ * Gestisce il caricamento dati utente, prenotazioni, alojamientos e relative operazioni
+ */
 
 const propertyCache = {};
-
-const GOOGLE_MAPS_API_KEY = 'AIzaSyCqe9NZZwT_luG4ub5ZrtCQ3a2E52VXdbo'
+const GOOGLE_MAPS_API_KEY = 'LA_TUA_API_KEY_DI_GOOGLE_MAPS';  // ← Sostituisci qui
 
 document.addEventListener('DOMContentLoaded', async () => {
     const isLoggedIn = await checkAuth();
@@ -18,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadUserProfile();
     loadUserReservations();
 
+    // Gestione dei tab (Mis Reservas, Mi Cuenta, Mis Alojamientos)
     const tabLinks = document.querySelectorAll('.tab-link');
     tabLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Pulsante “Añadir Alojamiento”
     const btnAddAloj = document.getElementById('btnAddAloj');
     if (btnAddAloj) {
         btnAddAloj.addEventListener('click', () => {
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Pulsante “Cancelar” nel form Crear/Editar
     const cancelAddAloj = document.getElementById('cancelAddAloj');
     if (cancelAddAloj) {
         cancelAddAloj.addEventListener('click', () => {
@@ -52,21 +54,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Submit form “createAlojForm”
     const createAlojForm = document.getElementById('createAlojForm');
     if (createAlojForm) {
         createAlojForm.addEventListener('submit', handleCreateAlojamiento);
     }
 
+    // Bottone logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
 
+    // Form upload immagine profilo
     const uploadForm = document.getElementById('uploadImageForm');
     if (uploadForm) {
         uploadForm.addEventListener('submit', (e) => handleImageUpload(e, uploadForm));
     }
 
+    // Mobile menu toggle
     const menuBtn = document.getElementById('mobileMenuBtn');
     const navMenu = document.getElementById('navMenu');
     if (menuBtn && navMenu) {
@@ -79,6 +85,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupTabs();
 });
 
+
+/**
+ * Ripristina i campi del form Create/Edit Alojamiento
+ */
 function resetAlojForm() {
     const fields = [
         'nombreAloj', 'direccionAloj', 'ciudadAloj', 'estadoAloj',
@@ -99,18 +109,22 @@ function resetAlojForm() {
     if (imgInput) imgInput.setAttribute('required', 'true');
 }
 
+
+/**
+ * Carica e popola i dati dell’utente (GET /api/auth/me)
+ */
 async function loadUserProfile() {
     try {
         const response = await apiGet('/auth/me');
         if (!response.ok) throw new Error('Failed to load profile');
-        
+
         const user = await response.json();
-        
+
         // Popola i campi del form
         document.getElementById('editUserName').value = user.nombre || '';
         document.getElementById('editUserSurname').value = user.apellidos || '';
         document.getElementById('userEmail').textContent = user.email || '—';
-        
+
         const imgEl = document.getElementById('userImage');
         if (user.imagen_perfil_ruta) {
             imgEl.src = user.imagen_perfil_ruta;
@@ -121,12 +135,14 @@ async function loadUserProfile() {
     }
 }
 
-// Aggiungi gestore per il reset immagine
+
+// ----------------------- RESET IMMAGINE PROFILO -----------------------
+
 const resetImageBtn = document.getElementById('resetImageBtn');
 if (resetImageBtn) {
     resetImageBtn.addEventListener('click', async () => {
         if (!confirm('¿Restablecer imagen de perfil a la predeterminada?')) return;
-        
+
         try {
             const response = await apiPost('/auth/reset-profile-image');
             if (response.ok) {
@@ -145,27 +161,29 @@ if (resetImageBtn) {
     });
 }
 
-// Aggiungi gestore per il form di aggiornamento profilo
+
+// --------------------- AGGIORNAMENTO PROFILO --------------------------
+
 const profileForm = document.getElementById('profileForm');
 if (profileForm) {
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const submitBtn = document.querySelector('#profileForm button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.textContent = 'Guardando...';
         }
-        
+
         const nombre = document.getElementById('editUserName')?.value.trim() || '';
         const apellidos = document.getElementById('editUserSurname')?.value.trim() || '';
-        
+
         try {
             const response = await apiPut('/auth/update-profile', {
                 nombre,
                 apellidos
             });
-            
+
             if (response.ok) {
                 showAlert('Perfil actualizado correctamente', 'success');
                 await loadUserProfile();
@@ -185,7 +203,6 @@ if (profileForm) {
     });
 }
 
-// Aggiungi gestore per il bottone annulla
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 if (cancelEditBtn) {
     cancelEditBtn.addEventListener('click', async () => {
@@ -193,6 +210,9 @@ if (cancelEditBtn) {
         showAlert('Cambios cancelados', 'info');
     });
 }
+
+
+// ----------------------- CARICAMENTO ALLOJAMIENTOS PROPRI -----------------------
 
 async function loadOwnerAlojamientos() {
     const container = document.getElementById('ownerAlojamientos');
@@ -252,14 +272,14 @@ async function loadOwnerAlojamientos() {
                 </div>
             `;
 
-            // Attacco listener per EDIT
+            // Listener per EDIT
             document.querySelectorAll('.edit-aloj').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.dataset.id;
                     openEditModal(id);
                 });
             });
-            // Attacco listener per DELETE
+            // Listener per DELETE
             document.querySelectorAll('.delete-aloj').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.dataset.id;
@@ -278,19 +298,22 @@ async function loadOwnerAlojamientos() {
     }
 }
 
+
+/**
+ * Apre il modal per editare un Alojamiento, precompilando i campi
+ */
 async function openEditModal(id) {
     try {
         const response = await apiGet(`/alojamientos/${id}`);
         if (!response.ok) throw new Error('Error al cargar alojamiento');
 
         const property = await response.json();
-        document.getElementById('nombreAloj').value = property.nombre;
+        document.getElementById('nombreAloj').value    = property.nombre;
         document.getElementById('direccionAloj').value = property.direccion;
-        document.getElementById('ciudadAloj').value = property.ciudad;
-        document.getElementById('estadoAloj').value = property.estado_o_pais;
+        document.getElementById('ciudadAloj').value    = property.ciudad;
+        document.getElementById('estadoAloj').value    = property.estado_o_pais;
         document.getElementById('descripcionAloj').value = property.descripcion;
-        document.getElementById('precioAloj').value = property.precio_noche;
-        document.getElementById('linkMapAloj').value = ''; 
+        document.getElementById('precioAloj').value    = property.precio_noche;
         // Rimuoviamo il required su image, perché esiste già un’immagine
         document.getElementById('imageAlojInput').removeAttribute('required');
 
@@ -305,6 +328,40 @@ async function openEditModal(id) {
     }
 }
 
+
+/**
+ * Cancella un Alojamiento (DELETE /api/alojamientos/<id>)
+ */
+async function handleDeleteAlojamiento(id) {
+    if (!confirm('¿Estás seguro de eliminar este alojamiento? Se eliminarán todas las reservas e imágenes asociadas.')) {
+        return;
+    }
+
+    try {
+        const response = await apiDelete(`/alojamientos/${id}`);
+
+        if (response.ok) {
+            showAlert('Alojamiento eliminado correctamente', 'success');
+            loadOwnerAlojamientos();
+        } else {
+            try {
+                const errorData = await response.json();
+                showAlert(errorData.error || 'Error al eliminar el alojamiento', 'error');
+            } catch (e) {
+                showAlert('Error desconocido al eliminar el alojamiento', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showAlert('Error de red al eliminar el alojamiento', 'error');
+    }
+}
+
+
+/**
+ * Crea o aggiorna un Alojamiento (POST o PUT /api/alojamientos)
+ * Genera automaticamente i link Google Maps (embed + share) basati su “dirección, ciudad, estado”
+ */
 async function handleCreateAlojamiento(event) {
     event.preventDefault();
 
@@ -314,7 +371,7 @@ async function handleCreateAlojamiento(event) {
         submitBtn.textContent = 'Guardando...';
     }
 
-    // **Raccolta dati dal form**
+    // 1) Raccolta dati dal form
     const nombre      = document.getElementById('nombreAloj').value.trim();
     const direccion   = document.getElementById('direccionAloj').value.trim();
     const ciudad      = document.getElementById('ciudadAloj').value.trim();
@@ -334,15 +391,15 @@ async function handleCreateAlojamiento(event) {
         return;
     }
 
-    // 1) CREO IL “fullAddress” per Google Maps
+    // 2) Creo la “fullAddress” per Google Maps
     const fullAddress = `${direccion}, ${ciudad}, ${estado}`;
     const encodedAddress = encodeURIComponent(fullAddress);
 
-    // 2) Genero gli URL di Google Maps (Embed + Share)
+    // 3) Genero gli URL di Google Maps
     const link_map_url   = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
     const link_map_embed = `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodedAddress}`;
 
-    // 3) Upload immagine se ho un file nuovo
+    // 4) Upload immagine se ho un file nuovo
     let imagenPrincipalRuta = '';
     if (imageInput.files.length > 0) {
         const file = imageInput.files[0];
@@ -373,7 +430,7 @@ async function handleCreateAlojamiento(event) {
         }
     }
 
-    // 4) Compongo il payload JSON
+    // 5) Compongo il payload JSON
     const payload = {
         nombre,
         direccion,
@@ -416,464 +473,261 @@ async function handleCreateAlojamiento(event) {
     }
 }
 
-async function handleCreateAlojamiento(event) {
-    event.preventDefault();
-    
-    const submitBtn = document.querySelector('#createAlojForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Guardando...';
-    }
-    
-    const nombre = document.getElementById('nombreAloj').value.trim();
-    const direccion = document.getElementById('direccionAloj').value.trim();
-    const ciudad = document.getElementById('ciudadAloj').value.trim();
-    const estado = document.getElementById('estadoAloj').value.trim();
-    const descripcion = document.getElementById('descripcionAloj').value.trim();
-    const precio = document.getElementById('precioAloj').value;
-    const linkMap = document.getElementById('linkMapAloj').value.trim();
-    const imageInput = document.getElementById('imageAlojInput');
-    const editId = document.getElementById('editAlojId').value;
-    const isEditMode = !!editId;
-    
-    if (!nombre || !direccion || !ciudad || !estado || !descripcion || !precio) {
-        showAlert('Completa todos los campos obligatorios', 'error');
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Guardar';
-        }
-        return;
-    }
-    
-    let imagenPrincipalRuta = '';
-    
-    if (imageInput.files.length > 0) {
-        const file = imageInput.files[0];
-        const formData = new FormData();
-        formData.append('image', file);
-        
-        try {
-            const respImg = await fetch('/api/alojamientos/upload-image', {
-                method: 'POST',
-                credentials: 'include',
-                body: formData
-            });
-            
-            if (respImg.ok) {
-                const jsonImg = await respImg.json();
-                imagenPrincipalRuta = jsonImg.imagen_principal_ruta;
-            } else {
-                const err = await respImg.json().catch(() => ({}));
-                showAlert(err.error || 'Error al cargar la imagen', 'error');
-                throw 'fail upload image';
-            }
-        } catch (err) {
-            console.error('Error upload image alojamiento:', err);
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Guardar';
-            }
-            return;
-        }
-    }
-    
-    const payload = {
-        nombre,
-        direccion,
-        ciudad,
-        estado_o_pais: estado,
-        descripcion,
-        precio_noche: parseFloat(precio),
-        link_map: linkMap || null
-    };
-    
-    if (imagenPrincipalRuta) {
-        payload.imagen_principal_ruta = imagenPrincipalRuta;
-    }
-    
-    try {
-        let response;
-        if (isEditMode) {
-            response = await apiPut(`/alojamientos/${editId}`, payload);
-        } else {
-            response = await apiPost('/alojamientos', payload);
-        }
-        
-        if (response.ok) {
-            showAlert(`Alojamiento ${isEditMode ? 'actualizado' : 'creado'} correctamente!`, 'success');
-            resetAlojForm();
-            document.getElementById('formAddAlojModal').style.display = 'none';
-            loadOwnerAlojamientos();
-        } else {
-            const err = await response.json().catch(() => ({}));
-            showAlert(err.error || `Error al ${isEditMode ? 'actualizar' : 'crear'} el alojamiento`, 'error');
-        }
-    } catch (err) {
-        console.error('Error save alojamiento:', err);
-        showAlert('Error de red durante la operación', 'error');
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Guardar';
-        }
-    }
-}
+
+// --------------------- CARICAMENTO RICHIESTE DI PRENOTAZIONE -----------------------
 
 async function loadOwnerReservaRequests() {
-  const container = document.getElementById('ownerReservaRequests');
-  if (!container) return;
-  showSpinner('ownerReservaRequests', true);
-  try {
-    const response = await apiGet('/reservas/owner');
-    if (response.ok) {
-      const data = await response.json();
-      if (data.length === 0) {
-        container.innerHTML = '<p class="text-center">No hay solicitudes pendientes.</p>';
-        return;
-      }
-      // Creiamo una tabella
-      const rows = data.map(r => {
-        return `
-          <tr>
-            <td>${r.nombre_alojamiento}</td>
-            <td>${formatDate(r.fecha_inicio)}</td>
-            <td>${formatDate(r.fecha_fin)}</td>
-            <td>
-              <button class="btn btn-sm btn-primary confirm-request" data-id="${r.id_reserva}">
-                Confirmar
-              </button>
-              <button class="btn btn-sm btn-danger reject-request" data-id="${r.id_reserva}" style="margin-left:4px;">
-                Rifiutar
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+    const container = document.getElementById('ownerReservaRequests');
+    if (!container) return;
+    showSpinner('ownerReservaRequests', true);
+    try {
+        const response = await apiGet('/reservas/owner');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-center">No hay solicitudes pendientes.</p>';
+                return;
+            }
+            // Creiamo una tabella
+            const rows = data.map(r => {
+                return `
+                  <tr>
+                    <td>${r.nombre_alojamiento}</td>
+                    <td>${formatDate(r.fecha_inicio)}</td>
+                    <td>${formatDate(r.fecha_fin)}</td>
+                    <td>
+                      <button class="btn btn-sm btn-primary confirm-request" data-id="${r.id_reserva}">
+                        Confirmar
+                      </button>
+                      <button class="btn btn-sm btn-danger reject-request" data-id="${r.id_reserva}" style="margin-left:4px;">
+                        Rifiutar
+                      </button>
+                    </td>
+                  </tr>
+                `;
+            }).join('');
 
-      container.innerHTML = `
-        <table class="reservations-table">
-          <thead>
-            <tr>
-              <th>Alojamiento</th>
-              <th>Fecha Inicio</th>
-              <th>Fecha Fin</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      `;
-      setupOwnerRequestActions();
-    } else {
-      container.innerHTML = '<p class="text-center">Error al cargar solicitudes.</p>';
+            container.innerHTML = `
+              <table class="reservations-table">
+                <thead>
+                  <tr>
+                    <th>Alojamiento</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Fin</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows}
+                </tbody>
+              </table>
+            `;
+            setupOwnerRequestActions();
+        } else {
+            container.innerHTML = '<p class="text-center">Error al cargar solicitudes.</p>';
+        }
+    } catch (err) {
+        console.error('Error loadOwnerReservaRequests:', err);
+        container.innerHTML = '<p class="text-center">Error de red al cargar solicitudes.</p>';
+    } finally {
+        hideSpinner('ownerReservaRequests');
     }
-  } catch (err) {
-    console.error('Error loadOwnerReservaRequests:', err);
-    container.innerHTML = '<p class="text-center">Error de red al cargar solicitudes.</p>';
-  } finally {
-    hideSpinner('ownerReservaRequests');
-  }
 }
 
 function setupOwnerRequestActions() {
-  // Confirmar
-  document.querySelectorAll('.confirm-request').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      try {
-        const resp = await fetch(`/api/reservas/${id}/confirm`, {
-          method: 'PUT',
-          credentials: 'include'
+    // Confirmar
+    document.querySelectorAll('.confirm-request').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            try {
+                const resp = await fetch(`/api/reservas/${id}/confirm`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    showAlert('Prenotazione confermata!', 'success');
+                    loadOwnerReservaRequests();
+                } else {
+                    const err = await resp.json();
+                    showAlert(err.error || 'Errore conferma.', 'error');
+                }
+            } catch (err) {
+                console.error('Error confirm reservation:', err);
+                showAlert('Errore di rete.', 'error');
+            }
         });
-        if (resp.ok) {
-          showAlert('Prenotazione confermata!', 'success');
-          loadOwnerReservaRequests();
-        } else {
-          const err = await resp.json();
-          showAlert(err.error || 'Errore conferma.', 'error');
-        }
-      } catch (err) {
-        console.error('Error confirm reservation:', err);
-        showAlert('Errore di rete.', 'error');
-      }
     });
-  });
 
-  // Rifiutar
-  document.querySelectorAll('.reject-request').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      try {
-        const resp = await fetch(`/api/reservas/${id}/reject`, {
-          method: 'PUT',
-          credentials: 'include'
+    // Rifiutar
+    document.querySelectorAll('.reject-request').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            try {
+                const resp = await fetch(`/api/reservas/${id}/reject`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    showAlert('Prenotazione rifiutata!', 'success');
+                    loadOwnerReservaRequests();
+                } else {
+                    const err = await resp.json();
+                    showAlert(err.error || 'Errore rifiuto.', 'error');
+                }
+            } catch (err) {
+                console.error('Error reject reservation:', err);
+                showAlert('Errore di rete.', 'error');
+            }
         });
-        if (resp.ok) {
-          showAlert('Prenotazione rifiutata!', 'success');
-          loadOwnerReservaRequests();
-        } else {
-          const err = await resp.json();
-          showAlert(err.error || 'Errore rifiuto.', 'error');
-        }
-      } catch (err) {
-        console.error('Error reject reservation:', err);
-        showAlert('Errore di rete.', 'error');
-      }
     });
-  });
-}
-
-/**
- * Carica i dati di profilo (GET /api/auth/me) e popola la pagina.
- */
-// Funzione loadUserProfile aggiornata
-async function loadUserProfile() {
-    try {
-        const response = await apiGet('/auth/me');
-        if (!response.ok) throw new Error('Failed to load profile');
-        
-        const user = await response.json();
-        console.log("User profile data:", user);
-        
-        // Popola i campi del form
-        const nameInput = document.getElementById('editUserName');
-        const surnameInput = document.getElementById('editUserSurname');
-        const emailDisplay = document.getElementById('userEmailDisplay');
-        
-        if (nameInput) nameInput.value = user.nombre || '';
-        if (surnameInput) surnameInput.value = user.apellidos || '';
-        if (emailDisplay) emailDisplay.textContent = user.email || '—';
-        
-        const imgEl = document.getElementById('userImage');
-        if (imgEl && user.imagen_perfil_ruta) {
-            imgEl.src = user.imagen_perfil_ruta;
-        }
-    } catch (err) {
-        console.error('Error loading user profile:', err);
-        showAlert('Error al cargar datos del perfil', 'error');
-    }
 }
 
 
-/**
- * Gestisce l'upload dell'immagine di profilo
- * @param {Event} event - submit event del form
- * @param {HTMLFormElement} uploadForm - riferimento al form upload
- */
-async function handleImageUpload(event, uploadForm) {
-  event.preventDefault();
+// ----------------------- CARICAMENTO PRENOTAZIONI UTENTE -----------------------
 
-  const fileInput = document.getElementById('imageInput');
-  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-    showAlert('Seleziona un file!', 'warning');
-    return;
-  }
-
-  const file = fileInput.files[0];
-  // Verifica lato client tipo e dimensione (opzionale)
-  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
-    showAlert('Formato non valido. Usa PNG, JPG o GIF.', 'error');
-    return;
-  }
-
-  // Prepara FormData
-  const formData = new FormData();
-  formData.append('image', file);
-
-  // Disabilita il pulsante di submit
-  const submitBtn = uploadForm.querySelector('button[type="submit"]');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Caricamento…';
-  }
-
-  try {
-    const response = await fetch('/api/auth/upload-profile-image', {
-      method: 'POST',
-      credentials: 'include',
-      body: formData
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      // Aggiorna in pagina l’immagine del profilo
-      document.getElementById('userImage').src = data.imagen_perfil_ruta;
-      showAlert('Immagine aggiornata con successo!', 'success');
-      // Reset input file
-      fileInput.value = '';
-    } else {
-      const errJson = await response.json();
-      showAlert(errJson.error || 'Errore caricamento immagine.', 'error');
-    }
-  } catch (err) {
-    console.error('Upload image error:', err);
-    showAlert('Errore di rete durante caricamento.', 'error');
-  } finally {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Cambiar foto';
-    }
-  }
-}
-
-
-/**
- * Carica le prenotazioni dell’utente loggato (GET /api/reservas)
- */
 async function loadUserReservations() {
-  const reservationsContainer = document.getElementById('userReservations');
-  if (!reservationsContainer) return;
+    const reservationsContainer = document.getElementById('userReservations');
+    if (!reservationsContainer) return;
 
-  showSpinner('userReservations', true);
+    showSpinner('userReservations', true);
 
-  try {
-    const response = await apiGet('/reservas');
-    if (response.ok) {
-      const reservations = await response.json();
+    try {
+        const response = await apiGet('/reservas');
+        if (response.ok) {
+            const reservations = await response.json();
 
-      if (reservations.length === 0) {
-        reservationsContainer.innerHTML = `
-          <div class="alert alert-info">
-            No tienes reservas. <a href="search.html">Buscar alojamientos</a>
-          </div>
-        `;
-        return;
-      }
+            if (reservations.length === 0) {
+                reservationsContainer.innerHTML = `
+                  <div class="alert alert-info">
+                    No tienes reservas. <a href="search.html">Buscar alojamientos</a>
+                  </div>
+                `;
+                return;
+            }
 
-      await renderReservations(reservations);
-      setupReservationActions();
-    } else {
-      if (response.status === 401) {
-        window.location.href = 'login.html';
-      } else {
+            await renderReservations(reservations);
+            setupReservationActions();
+        } else {
+            if (response.status === 401) {
+                window.location.href = 'login.html';
+            } else {
+                showAlert('Error al cargar las reservas.', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
         showAlert('Error al cargar las reservas.', 'error');
-      }
+    } finally {
+        hideSpinner('userReservations');
     }
-  } catch (error) {
-    console.error('Error:', error);
-    showAlert('Error al cargar las reservas.', 'error');
-  } finally {
-    hideSpinner('userReservations');
-  }
 }
 
-
-/**
- * Render della tabella delle prenotazioni
- */
 async function renderReservations(reservations) {
-  const container = document.getElementById('userReservations');
-  if (!container) return;
+    const container = document.getElementById('userReservations');
+    if (!container) return;
 
-  // Recupera i dettagli di ciascun alloggio
-  const reservationsWithDetails = await Promise.all(
-    reservations.map(async (reserva) => {
-      let property = propertyCache[reserva.id_alojamiento];
+    // Recupera i dettagli di ciascun alloggio
+    const reservationsWithDetails = await Promise.all(
+        reservations.map(async (reserva) => {
+            let property = propertyCache[reserva.id_alojamiento];
 
-      if (!property) {
-        try {
-          const resp = await apiGet(`/alojamientos/${reserva.id_alojamiento}`);
-          if (resp.ok) {
-            property = await resp.json();
-            propertyCache[reserva.id_alojamiento] = property;
-          } else {
-            property = { nombre: 'Alojamiento no disponible' };
-          }
-        } catch (err) {
-          console.error('Error fetching property:', err);
-          property = { nombre: 'Alojamiento no disponibile' };
-        }
-      }
+            if (!property) {
+                try {
+                    const resp = await apiGet(`/alojamientos/${reserva.id_alojamiento}`);
+                    if (resp.ok) {
+                        property = await resp.json();
+                        propertyCache[reserva.id_alojamiento] = property;
+                    } else {
+                        property = { nombre: 'Alojamiento no disponible' };
+                    }
+                } catch (err) {
+                    console.error('Error fetching property:', err);
+                    property = { nombre: 'Alojamiento no disponibile' };
+                }
+            }
 
-      return { ...reserva, property };
-    })
-  );
+            return { ...reserva, property };
+        })
+    );
 
-  // Ordina: Pendiente (0), Confirmada (1), Cancelada (2)
-  reservationsWithDetails.sort((a, b) => {
-    const order = { Pendiente: 0, Confirmada: 1, Cancelada: 2 };
-    return order[a.estado_reserva] - order[b.estado_reserva];
-  });
+    // Ordina: Pendiente (0), Confirmada (1), Cancelada (2)
+    reservationsWithDetails.sort((a, b) => {
+        const order = { Pendiente: 0, Confirmada: 1, Cancelada: 2 };
+        return order[a.estado_reserva] - order[b.estado_reserva];
+    });
 
-  const tableHTML = `
-    <table class="reservations-table">
-      <thead>
-        <tr>
-          <th>Alojamiento</th>
-          <th>Fecha Inicio</th>
-          <th>Fecha Fin</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${reservationsWithDetails
-          .map((reserva) => {
-            const badgeClass =
-              reserva.estado_reserva === 'Pendiente'
-                ? 'badge-pending'
-                : reserva.estado_reserva === 'Confirmada'
-                ? 'badge-confirmed'
-                : 'badge-canceled';
+    const tableHTML = `
+      <table class="reservations-table">
+        <thead>
+          <tr>
+            <th>Alojamiento</th>
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${reservationsWithDetails
+            .map((reserva) => {
+                const badgeClass =
+                    reserva.estado_reserva === 'Pendiente'
+                        ? 'badge-pending'
+                        : reserva.estado_reserva === 'Confirmada'
+                        ? 'badge-confirmed'
+                        : 'badge-canceled';
 
-            const actions =
-              reserva.estado_reserva === 'Pendiente'
-                ? `<button class="btn btn-sm btn-outline cancel-reservation" data-id="${reserva.id_reserva}">Cancelar</button>`
-                : '';
+                const actions =
+                    reserva.estado_reserva === 'Pendiente'
+                        ? `<button class="btn btn-sm btn-outline cancel-reservation" data-id="${reserva.id_reserva}">Cancelar</button>`
+                        : '';
 
-            return `
-              <tr>
-                <td>
-                  <a href="detail.html?id=${reserva.id_alojamiento}">
-                    ${reserva.property.nombre}
-                  </a>
-                </td>
-                <td>${formatDate(reserva.fecha_inicio)}</td>
-                <td>${formatDate(reserva.fecha_fin)}</td>
-                <td><span class="badge ${badgeClass}">${reserva.estado_reserva}</span></td>
-                <td>${actions}</td>
-              </tr>
-            `;
-          })
-          .join('')}
-      </tbody>
-    </table>
-  `;
+                return `
+                  <tr>
+                    <td>
+                      <a href="detail.html?id=${reserva.id_alojamiento}">
+                        ${reserva.property.nombre}
+                      </a>
+                    </td>
+                    <td>${formatDate(reserva.fecha_inicio)}</td>
+                    <td>${formatDate(reserva.fecha_fin)}</td>
+                    <td><span class="badge ${badgeClass}">${reserva.estado_reserva}</span></td>
+                    <td>${actions}</td>
+                  </tr>
+                `;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    `;
 
-  container.innerHTML = tableHTML;
+    container.innerHTML = tableHTML;
 }
 
-
-/**
- * Aggiunge i listener ai pulsanti “Cancelar”
- */
 function setupReservationActions() {
-  const cancelButtons = document.querySelectorAll('.cancel-reservation');
-  cancelButtons.forEach((button) => {
-    button.addEventListener('click', async () => {
-      const reservationId = button.dataset.id;
-      if (!reservationId) return;
+    const cancelButtons = document.querySelectorAll('.cancel-reservation');
+    cancelButtons.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const reservationId = button.dataset.id;
+            if (!reservationId) return;
 
-      if (confirm('¿Seguro que deseas cancelar esta reserva?')) {
-        try {
-          const response = await apiDelete(`/reservas/${reservationId}`);
-          if (response.ok) {
-            showAlert('Reserva cancelada correctamente.', 'success');
-            loadUserReservations();
-          } else {
-            const err = await response.json();
-            showAlert(err.error || 'Error al cancelar la reserva.', 'error');
-          }
-        } catch (err) {
-          console.error('Error:', err);
-          showAlert('Error al cancelar la reserva.', 'error');
-        }
-      }
+            if (confirm('¿Seguro que deseas cancelar esta reserva?')) {
+                try {
+                    const response = await apiDelete(`/reservas/${reservationId}`);
+                    if (response.ok) {
+                        showAlert('Reserva cancelada correctamente.', 'success');
+                        loadUserReservations();
+                    } else {
+                        const err = await response.json();
+                        showAlert(err.error || 'Error al cancelar la reserva.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                    showAlert('Error al cancelar la reserva.', 'error');
+                }
+            }
+        });
     });
-  });
 }
 
 
@@ -881,17 +735,17 @@ function setupReservationActions() {
  * Effettua logout (POST /api/auth/logout)
  */
 async function logout() {
-  try {
-    const response = await apiPost('/auth/logout');
-    if (response.ok) {
-      window.location.href = 'index.html';
-    } else {
-      showAlert('Error al cerrar sesión.', 'error');
+    try {
+        const response = await apiPost('/auth/logout');
+        if (response.ok) {
+            window.location.href = 'index.html';
+        } else {
+            showAlert('Error al cerrar sesión.', 'error');
+        }
+    } catch (err) {
+        console.error('Error:', err);
+        showAlert('Error al cerrar sesión.', 'error');
     }
-  } catch (err) {
-    console.error('Error:', err);
-    showAlert('Error al cerrar sesión.', 'error');
-  }
 }
 
 
@@ -899,12 +753,12 @@ async function logout() {
  * Attiva il tab corrente (Mis Reservas / Mi Cuenta) nella navbar del profilo
  */
 function setActiveNavItem() {
-  const navLinks = document.querySelectorAll('nav a');
-  navLinks.forEach((link) => {
-    if (link.getAttribute('href') === 'profile.html') {
-      link.classList.add('active');
-    }
-  });
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach((link) => {
+        if (link.getAttribute('href') === 'profile.html') {
+            link.classList.add('active');
+        }
+    });
 }
 
 
@@ -912,19 +766,19 @@ function setActiveNavItem() {
  * Imposta il comportamento dei tab “Mis Reservas” e “Mi Cuenta”
  */
 function setupTabs() {
-  const tabLinks = document.querySelectorAll('.tab-link');
-  const tabContents = document.querySelectorAll('.tab-content');
-  if (tabLinks.length === 0 || tabContents.length === 0) return;
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+    if (tabLinks.length === 0 || tabContents.length === 0) return;
 
-  tabLinks.forEach((link) => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      tabLinks.forEach((l) => l.classList.remove('active'));
-      tabContents.forEach((c) => c.classList.remove('active'));
+    tabLinks.forEach((link) => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            tabLinks.forEach((l) => l.classList.remove('active'));
+            tabContents.forEach((c) => c.classList.remove('active'));
 
-      link.classList.add('active');
-      const tabId = link.getAttribute('href').substring(1);
-      document.getElementById(tabId).classList.add('active');
+            link.classList.add('active');
+            const tabId = link.getAttribute('href').substring(1);
+            document.getElementById(tabId).classList.add('active');
+        });
     });
-  });
 }
