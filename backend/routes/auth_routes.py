@@ -8,35 +8,33 @@ from models import Usuario
 from utils import login_required
 from config import DEFAULT_PROFILE_IMAGE
 
-
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
 def register_user():
     """
     Endpoint: POST /auth/register
-    Corpo JSON atteso: { "email": "...", "password": "..." }
-    Risposta 201: { "message": "Usuario registrado" }
+    Body JSON: { "email": "...", "password": "...", "nombre": "...", "apellidos": "..." }
     """
     data = request.get_json()
-
-    # Check required fields
     if not data or not all(k in data for k in ('email', 'password')):
         return jsonify(error="Email and password required"), 400
-    
+
     email = data['email'].strip().lower()
     password = data['password']
     nombre = data.get('nombre', '').strip()
     apellidos = data.get('apellidos', '').strip()
-    
-    # Check if email exists
+
     if Usuario.query.filter_by(email=email).first():
         return jsonify(error="Email already registered"), 409
-    
-    # Hash sicuro della password con bcrypt
+
     pw_hash = bcrypt.hash(password)
-    nuevo_usuario = Usuario(email=email, contrasena=pw_hash,
-                            nombre=nombre, apellidos=apellidos)  # nome/apellidos si possono estendere dopo
+    nuevo_usuario = Usuario(
+        email=email,
+        contrasena=pw_hash,
+        nombre=nombre,
+        apellidos=apellidos
+    )
     db.session.add(nuevo_usuario)
     db.session.commit()
     return jsonify(message="User registered successfully"), 201
@@ -45,39 +43,27 @@ def register_user():
 def login_user():
     """
     Endpoint: POST /auth/login
-    Corpo JSON: { "email": "...", "password": "..." }
-    Se credenziali valide, imposta session['user_id'] e restituisce 200 OK.
+    Body JSON: { "email": "...", "password": "..." }
     """
     data = request.get_json()
-
     if not data or not all(k in data for k in ('email', 'password')):
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
-    
+
     email = data['email'].strip().lower()
     password = data['password']
 
     user = Usuario.query.filter_by(email=email).first()
-    
-    if not user:
+    if not user or not bcrypt.verify(password, user.contrasena):
         return jsonify({'error': 'Credenciales inválidas'}), 401
-    
-    # Verifico la password con bcrypt
-    if not bcrypt.verify(password, user.contrasena):
-        return jsonify({'error': 'Credenciales inválidas'}), 401
-    
-    # Imposta l'ID utente nella sessione (tramite cookie firmato)
-    session['user_id'] = user.id_usuario
-    # (Opzionale) Rendi la sessione "permanente" 
-    # in questo caso durerebbe fino a session.permanent_lifetime
-    #session.permanent = True
 
+    session['user_id'] = user.id_usuario
     return jsonify({'message': 'Login eseguito'}), 200
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout_user():
     """
-    POST /auth/logout
-    Rimuove 'user_id' dalla sessione e restituisce 200 OK.
+    Endpoint: POST /auth/logout
+    Rimuove 'user_id' dalla sessione.
     """
     session.pop('user_id', None)
     return jsonify({'message': 'Logout eseguito'}), 200
@@ -86,7 +72,7 @@ def logout_user():
 def get_current_user():
     """
     Endpoint: GET /auth/me
-    Restituisce i dati dell'utente loggato
+    Ritorna i dati dell’utente loggato, incluso 'imagen_perfil_ruta'.
     """
     user_id = session.get('user_id')
     if not user_id:
@@ -96,7 +82,6 @@ def get_current_user():
     if not user:
         return jsonify({'error': 'Utente non trovato'}), 404
 
-    # Correzione: Restituisci sempre tutti i campi
     return jsonify({
         'id_usuario': user.id_usuario,
         'nombre': user.nombre or '',
@@ -106,7 +91,7 @@ def get_current_user():
     }), 200
 
 def allowed_file(filename):
-    """Controlla se l'estensione del file è permessa."""
+    """Controlla se l’estensione del file è permessa."""
     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
     return ext in current_app.config['ALLOWED_IMAGE_EXTENSIONS']
 
@@ -114,9 +99,9 @@ def allowed_file(filename):
 def upload_profile_image():
     """
     Endpoint: POST /auth/upload-profile-image
-    Riceve un multipart/form-data con campo 'image'.
-    Salva l'immagine in frontend/static/uploads/user_profiles e aggiorna
-    il campo imagen_perfil_ruta di Usuario.
+    Riceve multipart/form-data con campo 'image'.
+    Salva l’immagine in frontend/static/uploads/user_profiles e aggiorna
+    'imagen_perfil_ruta' dell’utente.
     """
     user_id = session.get('user_id')
     if not user_id:
@@ -133,34 +118,26 @@ def upload_profile_image():
         return jsonify({'error': 'Formato non consentito'}), 400
 
     filename = secure_filename(file.filename)
-    # Facciamo un prefisso con l’ID utente per evitare collisioni  
-    # es. "5_avatar.jpg"
     prefix = f"user_{user_id}_"
     filename = prefix + filename
 
     upload_folder = current_app.config['UPLOAD_FOLDER']
-    # Se la cartella non esiste (magari qualcuno l’ha cancellata), la ricrea
     os.makedirs(upload_folder, exist_ok=True)
-
     save_path = os.path.join(upload_folder, filename)
+
     try:
         file.save(save_path)
     except Exception as e:
         current_app.logger.error(f"Errore salvataggio file: {e}")
         return jsonify({'error': 'Errore interno durante il salvataggio dell\'immagine'}), 500
 
-    # Costruiamo il percorso relativo per l’URL (frontend/static ...)
-    # In HTML basterà fare <img src="/static/uploads/user_profiles/user_5_avatar.jpg">
     rel_path = f"/static/uploads/user_profiles/{filename}"
-
-    # Aggiorniamo il record utente
     user = Usuario.query.get(user_id)
     user.imagen_perfil_ruta = rel_path
     try:
         db.session.commit()
     except Exception as e:
         current_app.logger.error(f"Errore DB aggiorna immagine: {e}")
-        # Se il commit fallisce, rimuoviamo il file fisico
         try:
             os.remove(save_path)
         except:
@@ -173,16 +150,16 @@ def upload_profile_image():
 @login_required
 def reset_profile_image():
     """
-    Resetta l'immagine del profilo a quella predefinita
+    Endpoint: POST /auth/reset-profile-image
+    Resetta l’immagine del profilo a quella predefinita.
     """
     user_id = session['user_id']
     user = Usuario.query.get(user_id)
-    
     if not user:
         return jsonify({'error': 'Usuario no encontrado'}), 404
-    
+
     try:
-        # Elimina l'immagine vecchia se esiste
+        # Rimuove la vecchia immagine se non è la default
         if user.imagen_perfil_ruta and not user.imagen_perfil_ruta.startswith(DEFAULT_PROFILE_IMAGE):
             try:
                 old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 
@@ -190,51 +167,47 @@ def reset_profile_image():
                 if os.path.exists(old_path):
                     os.remove(old_path)
             except Exception as e:
-                current_app.logger.error(f"Error deleting old profile image: {str(e)}")
-        
+                current_app.logger.error(f"Error deleting old profile image: {e}")
+
         user.imagen_perfil_ruta = DEFAULT_PROFILE_IMAGE
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Imagen restablecida correctamente',
             'default_image': DEFAULT_PROFILE_IMAGE
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error resetting profile image: {str(e)}")
+        current_app.logger.error(f"Error resetting profile image: {e}")
         return jsonify({'error': 'Error interno al restablecer imagen'}), 500
-    
+
 @auth_bp.route('/update-profile', methods=['PUT'])
 @login_required
 def update_profile():
     """
-    Aggiorna nome e cognome dell'utente
+    Endpoint: PUT /auth/update-profile
+    Aggiorna nome e cognome dell’utente.
     """
     user_id = session['user_id']
     user = Usuario.query.get(user_id)
-    
     if not user:
         return jsonify({'error': 'Usuario no encontrado'}), 404
-    
+
     data = request.get_json()
-    
-    # Validazione campi
     if 'nombre' not in data or 'apellidos' not in data:
         return jsonify({'error': 'Nombre y apellidos son obligatorios'}), 400
-    
+
     try:
         user.nombre = data['nombre']
         user.apellidos = data['apellidos']
         db.session.commit()
-        
         return jsonify({
             'message': 'Perfil actualizado correctamente',
             'nombre': user.nombre,
             'apellidos': user.apellidos
         }), 200
-        
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error updating profile: {str(e)}")
+        current_app.logger.error(f"Error updating profile: {e}")
         return jsonify({'error': 'Error interno al actualizar perfil'}), 500

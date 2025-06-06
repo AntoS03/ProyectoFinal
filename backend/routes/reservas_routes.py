@@ -5,8 +5,6 @@ from models import Reserva, Alojamiento
 from utils import login_required
 from datetime import datetime
 from sqlalchemy.orm import joinedload
-from sqlalchemy import or_, and_
-#from backend.utils import reserva_owner_required
 
 reservas_bp = Blueprint('reservas', __name__)
 
@@ -16,40 +14,35 @@ reservas_bp = Blueprint('reservas', __name__)
 def create_reserva():
     """
     Endpoint: POST /reservas
-    Richiede token utente.
-    Body JSON es.:
+    Richiede utente loggato.
+    Body JSON:
       {
         "id_alojamiento": 10,
         "fecha_inicio": "2025-06-01",
-        "fecha_fin": "2025-06-05",
-        "personas": 2   # (poiché nello schema non c’è un campo “personas”, lo ignoriamo, oppure lo memorizziamo in un campo extra se serve)
+        "fecha_fin": "2025-06-05"
       }
-    Risposta 201: { "message": "Reserva creada", "id": 123 }
     """
     data = request.get_json()
     user_id = session['user_id']
 
-    # Controllo campi obbligatori
     obbligatori = ['id_alojamiento', 'fecha_inicio', 'fecha_fin']
-    if not data or not all(key in data for key in obbligatori):
+    if not data or not all(k in data for k in obbligatori):
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
-    
+
     try:
-        # Converto le date da string a oggetto date
         fecha_inicio = datetime.strptime(data['fecha_inicio'], '%Y-%m-%d').date()
         fecha_fin = datetime.strptime(data['fecha_fin'], '%Y-%m-%d').date()
     except ValueError:
-        return jsonify({'error': 'Formato de fecha inválido (usar YYYY-MM-DD)'}), 400
-    
+        return jsonify({'error': 'Formato de fecha inválido (YYYY-MM-DD)'}), 400
+
     if fecha_fin <= fecha_inicio:
         return jsonify({'error': 'La fecha de fin debe ser posterior a la de inicio'}), 400
-    
-    # Verifico che l’alloggio esista
+
     alojamiento = Alojamiento.query.get(data['id_alojamiento'])
     if not alojamiento:
         return jsonify({'error': 'Alojamiento no encontrado'}), 404
-    
-    # Controllo disponibilità: nessuna prenotazione “confirmada” o “pendiente” si sovrappone
+
+    # Controllo sovrapposizione prenotazioni “Pendiente” o “Confirmada”
     overlap = Reserva.query.filter(
         Reserva.id_alojamiento == data['id_alojamiento'],
         Reserva.estado_reserva.in_(['Pendiente', 'Confirmada']),
@@ -62,8 +55,7 @@ def create_reserva():
 
     if overlap:
         return jsonify({'error': 'Fechas no disponibles'}), 409
-    
-    # Creo la prenotazione
+
     nueva = Reserva(
         id_usuario=user_id,
         id_alojamiento=data['id_alojamiento'],
@@ -76,18 +68,17 @@ def create_reserva():
 
     return jsonify({'message': 'Reserva creada', 'id': nueva.id_reserva}), 201
 
-
 # Get user reservations
 @reservas_bp.route('', methods=['GET'])
 @login_required
 def get_user_reservas():
     """
     Endpoint: GET /reservas
-    Restituisce le prenotazioni del solo utente loggato.
+    Ritorna prenotazioni dell’utente loggato.
     """
     user_id = session['user_id']
     reservas = Reserva.query.filter_by(id_usuario=user_id).all()
-    
+
     result = []
     for r in reservas:
         result.append({
@@ -102,40 +93,36 @@ def get_user_reservas():
 # Cancel reservation
 @reservas_bp.route('/<int:id>', methods=['DELETE'])
 @login_required
-#@reserva_owner_required (Deprecated)
 def cancel_reserva(id):
     """
     Endpoint: DELETE /reservas/<id>
-    Permette al proprietario della prenotazione di cancellarla.
+    Cambia stato a 'Cancelada' se il cancellante è il creatore.
     """
     user_id = session['user_id']
     reserva = Reserva.query.get(id)
     if not reserva:
         return jsonify({'error': 'Reserva no encontrada'}), 404
 
-    # Verifico che sia l’utente che l’ha creata
     if reserva.id_usuario != user_id:
         return jsonify({'error': 'No autorizado'}), 403
-    
-    # Aggiorno lo stato a "Cancelada"
+
     reserva.estado_reserva = 'Cancelada'
     db.session.commit()
     return jsonify({'message': 'Reserva cancelada'}), 200
 
+# Confirm reservation (per proprietario dell’alloggio)
 @reservas_bp.route('/<int:id>/confirm', methods=['PUT'])
 @login_required
 def confirmar_reserva(id):
     """
     Endpoint: PUT /reservas/<id>/confirm
-    Solo il proprietario dell'alloggio associato alla prenotazione può confermare.
-    Cambia lo stato da 'Pendiente' a 'Confirmada'.
+    Solo proprietario dell’alloggio associato può confermare.
     """
     user_id = session['user_id']
     reserva = Reserva.query.get(id)
     if not reserva:
         return jsonify({'error': 'Reserva no encontrada'}), 404
 
-    # Controllo che la prenotazione sia ancora pendente
     if reserva.estado_reserva != 'Pendiente':
         return jsonify({'error': 'Solo reservas pendientes pueden confirmarse'}), 400
 
@@ -143,7 +130,6 @@ def confirmar_reserva(id):
     if not alojamiento:
         return jsonify({'error': 'Alojamiento asociado no encontrado'}), 404
 
-    # Verifica che l'utente loggato sia il proprietario dell'alloggio
     if alojamiento.id_propietario != user_id:
         return jsonify({'error': 'No autorizado'}), 403
 
@@ -151,16 +137,15 @@ def confirmar_reserva(id):
     db.session.commit()
     return jsonify({'message': 'Reserva confirmada'}), 200
 
+# Get owner’s pending requests
 @reservas_bp.route('/owner', methods=['GET'])
 @login_required
 def get_owner_reservas():
     """
-    GET /reservas/owner
-    Ritorna tutte le prenotazioni 'Pendiente' relative agli alojamientos
-    del proprietario corrente.
+    Endpoint: GET /reservas/owner
+    Ritorna prenotazioni 'Pendiente' relative a inoltri alloggi del proprietario.
     """
     user_id = session['user_id']
-    # Facciamo un join tra Rezerva e Alojamiento per filtrare su id_propietario
 
     query = Reserva.query.options(joinedload(Reserva.alojamiento))\
         .filter(Reserva.estado_reserva == 'Pendiente')\
@@ -181,24 +166,23 @@ def get_owner_reservas():
         })
     return jsonify(result), 200
 
+# Reject reservation (per proprietario dell’alloggio)
 @reservas_bp.route('/<int:id>/reject', methods=['PUT'])
 @login_required
 def reject_reserva(id):
     """
-    PUT /reservas/<id>/reject
-    L’owner dell’alojamiento può rifiutare (impostare a 'Cancelada') la prenotazione.
+    Endpoint: PUT /reservas/<id>/reject
+    L’owner dell’alojamiento rifiuta la prenotazione (imposta a 'Cancelada').
     """
     user_id = session['user_id']
     reserva = Reserva.query.get(id)
     if not reserva:
         return jsonify({'error': 'Reserva no encontrada'}), 404
 
-    # Verifico che sia il proprietario dell’alojamiento
     alojamiento = Alojamiento.query.get(reserva.id_alojamiento)
     if not alojamiento or alojamiento.id_propietario != user_id:
         return jsonify({'error': 'No autorizado'}), 403
 
-    # Se la prenotazione è già stata gestita, non consento
     if reserva.estado_reserva != 'Pendiente':
         return jsonify({'error': 'Solo reservas pendientes pueden rechazarse'}), 400
 

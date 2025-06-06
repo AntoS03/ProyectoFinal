@@ -1,10 +1,5 @@
-# models.py
-
 from extensions import db
 from datetime import datetime, timezone
-
-#def utc_now():
-#    return datetime.now(timezone.utc)
 
 class Usuario(db.Model):
     __tablename__ = 'Usuarios'
@@ -49,7 +44,11 @@ class Reserva(db.Model):
     fecha_inicio = db.Column(db.Date, nullable=False)
     fecha_fin = db.Column(db.Date, nullable=False)
     fecha_reserva_creada = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    estado_reserva = db.Column(db.Enum('Pendiente', 'Confirmada', 'Cancelada', 'Pagado'), nullable=False, default='Pendiente')
+    estado_reserva = db.Column(
+        db.Enum('Pendiente', 'Confirmada', 'Cancelada', 'Pagado'),
+        nullable=False,
+        default='Pendiente'
+    )
 
 class Comentario(db.Model):
     __tablename__ = 'Comentarios'
@@ -58,7 +57,7 @@ class Comentario(db.Model):
     id_usuario = db.Column(db.Integer, db.ForeignKey('Usuarios.id_usuario'), nullable=False)
     id_alojamiento = db.Column(db.Integer, db.ForeignKey('Alojamientos.id_alojamiento'), nullable=False)
     texto = db.Column(db.Text, nullable=False)
-    puntuacion = db.Column(db.SmallInteger, nullable=True)
+    puntuacion = db.Column(db.SmallInteger, nullable=True)  # potenzialmente 1–5 stelle
     fecha_comentario = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
 class ImagenAlojamiento(db.Model):
